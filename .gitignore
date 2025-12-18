@@ -41,3 +41,12 @@ yarn-error.log*
 next-env.d.ts
 
 public/signature*
+
+# AI tooling (local state)
+/.cursor/
+!/.cursor/rules/
+!/.cursor/rules/**
+/.gemini/
+
+# Warp-specific file created locally by Warp tooling (keep AGENTS.md as the canonical doc)
+/WARP.md

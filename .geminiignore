@@ -1,0 +1,25 @@
+# Gemini CLI ignore
+# Excludes files from Gemini context/indexing.
+
+# dependencies
+node_modules/
+
+# build outputs
+.next/
+out/
+build/
+dist/
+coverage/
+
+# tooling
+.vercel/
+
+# env / secrets
+.env*
+*.pem
+
+# logs
+*.log
+
+# project-specific large/binary artifacts
+public/signature*
