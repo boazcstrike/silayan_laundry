@@ -9,7 +9,7 @@ export default function LaundryCounter() {
 
   const [items, setItems] = useState<Items>(() => {
     const all: Items = {};
-    Object.entries(categories).forEach(([group, names]) => {
+    Object.entries(categories).forEach(([, names]) => {
       names.forEach(({ name }) => (all[name] = 0));
     });
     return all;
@@ -23,11 +23,18 @@ export default function LaundryCounter() {
     setFn({ ...source, [name]: Math.max(0, (source[name] || 0) + delta) });
   };
 
+  const setCount = (name: string, next: number, custom: boolean = false) => {
+    const setFn = custom ? setCustomItems : setItems;
+    const source = custom ? customItems : items;
+    const value = Number.isFinite(next) ? Math.max(0, Math.trunc(next)) : 0;
+    setFn({ ...source, [name]: value });
+  };
+
   const resetCounts = () => {
     if (window.confirm("Are you sure you want to reset all counts? This action cannot be undone.")) {
       setItems(() => {
         const all: Items = {};
-        Object.entries(categories).forEach(([group, names]) => {
+        Object.entries(categories).forEach(([, names]) => {
           names.forEach(({ name }) => (all[name] = 0));
         });
         return all;
@@ -42,14 +49,55 @@ export default function LaundryCounter() {
     setNewCustomItem("");
   };
 
-  const processSubmission = () => {
-    generateTextFile();
-    generateImage(items);
+  const makeTimestamp = () =>
+    new Date().toISOString().replace(/[-:.]/g, "").slice(0, 15);
+
+  const downloadBlob = (blob: Blob, filename: string) => {
+    const link = document.createElement("a");
+    link.download = filename;
+    link.href = URL.createObjectURL(blob);
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(link.href), 0);
   };
 
-  const generateImage = async (data: Record<string, number>) => {
+  const sendImageToDiscord = async (image: Blob, timestamp: string) => {
+    const form = new FormData();
+    const file = new File([image], `laundry-output-${timestamp}.png`, {
+      type: "image/png",
+    });
+
+    form.append("file", file);
+    form.append(
+      "message",
+      `Laundry submission (${new Date().toLocaleString("en-US")})`
+    );
+
+    const res = await fetch("/api/discord", {
+      method: "POST",
+      body: form,
+    });
+
+    if (!res.ok) {
+      const details = await res.text().catch(() => "");
+      alert(`Discord upload failed (${res.status}). ${details}`);
+    }
+  };
+
+  const canvasToBlob = (canvas: HTMLCanvasElement) =>
+    new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) return reject(new Error("Failed to generate PNG"));
+          resolve(blob);
+        },
+        "image/png",
+        1
+      );
+    });
+
+  const generateImageBlob = async (data: Record<string, number>) => {
     const img = new Image();
-    img.src = "/template.jpg"; 
+    img.src = "/template.jpg";
     await img.decode();
 
     const canvas = document.createElement("canvas");
@@ -61,82 +109,99 @@ export default function LaundryCounter() {
 
     ctx.fillStyle = "black";
     ctx.font = "32px Arial";
-    
+
     const date_today = new Date().toLocaleDateString("en-US");
     ctx.fillText(date_today, 250, 250);
+
+    const drawIfPositive = (value: number, x: number, y: number) => {
+      if (value > 0) ctx.fillText(String(value), x, y);
+    };
+
     categories["Regular Laundry"].forEach((item) => {
-      ctx.fillText(String(data[item.name] || 0), item.x, item.y);
+      drawIfPositive(data[item.name] || 0, item.x, item.y);
     });
     categories["Home Items"].forEach((item) => {
-      ctx.fillText(String(data[item.name] || 0), item.x, item.y);
+      drawIfPositive(data[item.name] || 0, item.x, item.y);
     });
     categories["Other Items"].forEach((item) => {
-      ctx.fillText(String(data[item.name] || 0), item.x, item.y);
+      drawIfPositive(data[item.name] || 0, item.x, item.y);
     });
 
-    const signature = new Image();
-    signature.src = "/signature_bo.png"; 
-    await signature.decode();
-    ctx.drawImage(signature, 735, 1098, signature.width * 0.55, signature.height * 0.55);
-    ctx.fillText(date_today, 850, 1214);
+    // Total quantity (ONLY for items in the template image). Set your own coordinates.
+    const totalQuantity = [
+      ...categories["Regular Laundry"],
+      ...categories["Home Items"],
+      ...categories["Other Items"],
+    ].reduce((sum, item) => sum + (data[item.name] || 0), 0);
 
-    const timestamp = new Date().toISOString().replace(/[-:.]/g, "").slice(0, 15);
-    const link = document.createElement("a");
-    link.download = `laundry-output-${timestamp}.png`;
-    link.href = canvas.toDataURL("image/png");
-    link.click();
-  };
-
-  const generateTextFile = async () => {
-    let data = "Laundry Items List\n\n";
-    Object.entries(categories).forEach(([group, names]) => {
-      data += `== ${group} ==\n`;
-      names.forEach(({ name }) => {
-        if (items[name] > 0) data += `${name}: ${items[name]}\n`;
-      });
-    });
-    if (Object.keys(customItems).length) {
-      data += `\n== Custom Items ==\n`;
-      Object.entries(customItems).forEach(([name, count]) => {
-        if (count > 0) data += `${name}: ${count}\n`;
-      });
+    const TOTAL_QTY_X = 800;
+    const TOTAL_QTY_Y = 43.5 * 12 + 40 * 2;
+    if (totalQuantity > 0) {
+      ctx.fillText(String(totalQuantity), TOTAL_QTY_X, TOTAL_QTY_Y);
     }
 
-    const timestamp = new Date().toISOString().replace(/[-:.]/g, "").slice(0, 15);
-    const filename = `./output/${timestamp}.txt`;
-    const blob = new Blob([data], { type: "text/plain" });
-    const a = document.createElement("a");
-    const filePath = `./dump/${timestamp}.txt`;
-    await fetch(filePath, {
-      method: 'PUT',
-      body: blob,
-    });
-    // if you need to download to the user's device
-    // a.href = URL.createObjectURL(blob);
-    // a.download = filename;
-    // a.click();
+    const signature = new Image();
+    signature.src = "/signature_bo.png";
+    await signature.decode();
+    ctx.drawImage(
+      signature,
+      735,
+      1098,
+      signature.width * 0.55,
+      signature.height * 0.55
+    );
+    ctx.fillText(date_today, 850, 1214);
+
+    return canvasToBlob(canvas);
+  };
+
+  const onDownloadImage = async () => {
+    const timestamp = makeTimestamp();
+    const blob = await generateImageBlob(items);
+    downloadBlob(blob, `laundry-output-${timestamp}.png`);
+  };
+
+  const onSendToDiscord = async () => {
+    const timestamp = makeTimestamp();
+    const blob = await generateImageBlob(items);
+    await sendImageToDiscord(blob, timestamp);
   };
 
   const renderItemControls = (name: string, value: number, isCustom: boolean = false) => (
-    <div className="flex items-center gap-2 mb-1" key={name}>
-      <div className="w-48">{name}</div>
+    <div
+      className="flex items-center gap-1 mb-2 min-h-[48px]" // more gap and row height for breathing room
+      key={name}
+    >
+      <div className="flex-1 min-w-0">
+        <span className="block font-normal text-base break-words text-right pr-2">{name}</span>
+      </div>
       <Button onClick={() => updateCount(name, -1, isCustom)}>-</Button>
-      <div>{value}</div>
+      <input
+        type="number"
+        inputMode="numeric"
+        min={0}
+        className="no-spinner h-9 w-9 rounded-md border bg-background px-2 text-center text-sm"
+        value={value}
+        onChange={(e) => {
+          const next = e.target.value === "" ? 0 : Number(e.target.value);
+          setCount(name, next, isCustom);
+        }}
+      />
       <Button onClick={() => updateCount(name, 1, isCustom)}>+</Button>
     </div>
   );
 
   return (
-    <div className="p-6 max-w-2xl mx-auto">
-      <h1 className="text-xl font-bold mb-4">Laundry Item Counter</h1>
+    <div className="p-6 max-w-6xl mx-auto">
+      <h1 className="text-xl font-bold mb-4 text-center">Laundry Item Counter</h1>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 mb-6">
         {Object.entries(categories).map(([group, names]) => (
           <div key={group}>
-          <h2 className="text-lg font-semibold mb-2">{group}</h2>
-          {names.map(({ name }) => renderItemControls(name, items[name]))}
+            <h2 className="text-lg font-semibold mb-2 text-right">{group}</h2>
+            {names.map(({ name }) => renderItemControls(name, items[name]))}
           </div>
-      ))}
+        ))}
       </div>
 
       <div className="mb-6">
@@ -154,9 +219,18 @@ export default function LaundryCounter() {
           renderItemControls(name, value, true)
         )}
       </div>
-      
-      <Button onClick={resetCounts}>Reset Counts</Button>
-      <Button onClick={processSubmission}>Submit and Download</Button>
+
+      <div className="mt-8 flex flex-col gap-3">
+        <div className="flex flex-wrap gap-3">
+          <Button variant="outline" onClick={resetCounts}>Reset Counts</Button>
+          <Button onClick={onDownloadImage}>Download Image</Button>
+          <Button variant="secondary" onClick={onSendToDiscord}>Send to Discord</Button>
+        </div>
+
+        <p className="text-sm text-muted-foreground">
+          Tip: Life is good.
+        </p>
+      </div>
 
     </div>
   );

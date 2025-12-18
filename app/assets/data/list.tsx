@@ -1,6 +1,5 @@
-const starting_x_left = 550;
-const starting_x_right = 1180;
-const starting_y_left = 565.5;
+const starting_x_left = 150;
+const starting_x_right = 800;
 const starting_y_right = 305;
 const group_space = 92
 const box_space = 43.5
@@ -45,6 +44,10 @@ const categories = {
         { name: "Tablecloths", x: starting_x_right, y: starting_y_right + box_space * 9 },
         { name: "Towels / Face Towels", x: starting_x_right, y: starting_y_right + box_space * 10 },
     ],
+
+    /* there's supposed to be baby clothing but i do not have a baby, so...
+    uppers, lowers, overalls
+    */
     "Other Items": [
         { name: "Bags", x: starting_x_right, y: starting_y_right + box_space * 11 + group_space },
         { name: "Shoes", x: starting_x_right, y: starting_y_right + box_space * 12 + group_space },
