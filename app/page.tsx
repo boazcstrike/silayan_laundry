@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import categories from "@/app/assets/data/list";
 
@@ -16,6 +17,7 @@ export default function LaundryCounter() {
   });
   const [customItems, setCustomItems] = useState<Items>({});
   const [newCustomItem, setNewCustomItem] = useState("");
+  const [isSendingToDiscord, setIsSendingToDiscord] = useState(false);
 
   const updateCount = (name: string, delta: number, custom: boolean = false) => {
     const setFn = custom ? setCustomItems : setItems;
@@ -126,19 +128,20 @@ export default function LaundryCounter() {
     categories["Other Items"].forEach((item) => {
       drawIfPositive(data[item.name] || 0, item.x, item.y);
     });
-
+    
+    // temp disable
     // Total quantity (ONLY for items in the template image). Set your own coordinates.
-    const totalQuantity = [
-      ...categories["Regular Laundry"],
-      ...categories["Home Items"],
-      ...categories["Other Items"],
-    ].reduce((sum, item) => sum + (data[item.name] || 0), 0);
+    // const totalQuantity = [
+    //   ...categories["Regular Laundry"],
+    //   ...categories["Home Items"],
+    //   ...categories["Other Items"],
+    // ].reduce((sum, item) => sum + (data[item.name] || 0), 0);
 
-    const TOTAL_QTY_X = 800;
-    const TOTAL_QTY_Y = 43.5 * 12 + 40 * 2;
-    if (totalQuantity > 0) {
-      ctx.fillText(String(totalQuantity), TOTAL_QTY_X, TOTAL_QTY_Y);
-    }
+    // const TOTAL_QTY_X = 800;
+    // const TOTAL_QTY_Y = 43.5 * 12 + 40 * 2;
+    // if (totalQuantity > 0) {
+    //   ctx.fillText(String(totalQuantity), TOTAL_QTY_X, TOTAL_QTY_Y);
+    // }
 
     const signature = new Image();
     signature.src = "/signature_bo.png";
@@ -162,9 +165,16 @@ export default function LaundryCounter() {
   };
 
   const onSendToDiscord = async () => {
-    const timestamp = makeTimestamp();
-    const blob = await generateImageBlob(items);
-    await sendImageToDiscord(blob, timestamp);
+    if (isSendingToDiscord) return;
+
+    setIsSendingToDiscord(true);
+    try {
+      const timestamp = makeTimestamp();
+      const blob = await generateImageBlob(items);
+      await sendImageToDiscord(blob, timestamp);
+    } finally {
+      setIsSendingToDiscord(false);
+    }
   };
 
   const renderItemControls = (name: string, value: number, isCustom: boolean = false) => (
@@ -224,7 +234,14 @@ export default function LaundryCounter() {
         <div className="flex flex-wrap gap-3">
           <Button variant="outline" onClick={resetCounts}>Reset Counts</Button>
           <Button onClick={onDownloadImage}>Download Image</Button>
-          <Button variant="secondary" onClick={onSendToDiscord}>Send to Discord</Button>
+          <Button
+            variant="secondary"
+            onClick={onSendToDiscord}
+            disabled={isSendingToDiscord}
+          >
+            {isSendingToDiscord && <Loader2 className="h-4 w-4 animate-spin" />}
+            {isSendingToDiscord ? "Sending..." : "Send to Discord"}
+          </Button>
         </div>
 
         <p className="text-sm text-muted-foreground">
