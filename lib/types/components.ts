@@ -133,3 +133,26 @@ export interface UseDiscordUploadReturn {
   /** Clear any error */
   clearError: () => void;
 }
+
+/**
+ * Submission channel types
+ */
+export type SubmissionChannel = 'download' | 'discord' | 'whatsapp' | 'viber' | 'messenger';
+
+/**
+ * Return type for useSubmission hook
+ */
+export interface UseSubmissionReturn {
+  /** Record a submission to the database */
+  recordSubmission: (
+    counts: Record<string, number>,
+    channel: SubmissionChannel,
+    channelSuccess?: boolean
+  ) => Promise<number | null>;
+  /** Whether submission is being recorded */
+  isRecording: boolean;
+  /** Error from recording, if any */
+  error: string | null;
+  /** Clear any error */
+  clearError: () => void;
+}

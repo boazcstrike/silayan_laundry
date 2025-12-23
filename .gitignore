@@ -53,3 +53,6 @@ public/signature*
 /WARP.md
 
 .opencode
+
+# Analytics database (SQLite)
+/data/

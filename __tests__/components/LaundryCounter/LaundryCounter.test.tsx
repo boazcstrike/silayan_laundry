@@ -15,6 +15,7 @@ jest.mock('@/hooks', () => ({
   useLaundryItems: jest.fn(),
   useImageGeneration: jest.fn(),
   useDiscordUpload: jest.fn(),
+  useSubmission: jest.fn(),
 }));
 
 // Mock subcomponents to isolate testing
@@ -57,6 +58,13 @@ jest.mock('@/components/LaundryCounter/ActionButtons', () => {
   };
 });
 
+// Mock ThemeToggle to avoid ThemeProvider dependency
+jest.mock('@/components/ThemeToggle', () => ({
+  ThemeToggle: function MockThemeToggle() {
+    return <div data-testid="mock-theme-toggle">Theme Toggle</div>;
+  },
+}));
+
 describe('LaundryCounter', () => {
   const mockCategories = {
     'Regular Laundry': [
@@ -92,11 +100,19 @@ describe('LaundryCounter', () => {
     clearError: jest.fn(),
   };
 
+  const mockSubmission = {
+    recordSubmission: jest.fn().mockResolvedValue(1),
+    isRecording: false,
+    error: null,
+    clearError: jest.fn(),
+  };
+
    beforeEach(() => {
      jest.clearAllMocks();
      (hooks.useLaundryItems as jest.Mock).mockReturnValue(mockLaundryItems);
      (hooks.useImageGeneration as jest.Mock).mockReturnValue(mockImageGeneration);
      (hooks.useDiscordUpload as jest.Mock).mockReturnValue(mockDiscordUpload);
+     (hooks.useSubmission as jest.Mock).mockReturnValue(mockSubmission);
      // Spy on document.createElement to fix Jest mock issue with canvas/anchor elements
      jest.spyOn(document, 'createElement');
    });
