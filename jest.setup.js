@@ -1,11 +1,13 @@
 // Jest setup file
 require('@testing-library/jest-dom');
 
-// Mock global objects for testing
-global.URL = {
-  createObjectURL: jest.fn(() => 'mock-object-url'),
-  revokeObjectURL: jest.fn(),
-};
+// Mock URL static methods for testing while preserving native URL constructor
+// Store original URL class
+const OriginalURL = global.URL;
+
+// Mock only the static methods, keep native constructor functionality
+global.URL.createObjectURL = jest.fn(() => 'mock-object-url');
+global.URL.revokeObjectURL = jest.fn();
 
 // Add TextDecoder for blob reading in tests
 global.TextDecoder = class TextDecoder {
