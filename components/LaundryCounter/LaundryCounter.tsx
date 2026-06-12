@@ -40,6 +40,7 @@ const LaundryCounter: React.FC<LaundryCounterProps> = ({ categories }) => {
   const {
     uploadImage,
     isUploading: isSendingToDiscord,
+    isConfigured: isDiscordConfigured,
     error: discordUploadError,
     clearError: clearDiscordUploadError,
   } = useDiscordUpload();
@@ -160,6 +161,7 @@ const LaundryCounter: React.FC<LaundryCounterProps> = ({ categories }) => {
         onDownload={handleDownload}
         onSendToDiscord={handleSendToDiscord}
         isSendingToDiscord={isSendingToDiscord}
+        isDiscordConfigured={isDiscordConfigured}
         isGeneratingImage={isGeneratingImage}
         error={combinedError || undefined}
       />

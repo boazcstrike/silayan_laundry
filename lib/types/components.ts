@@ -72,6 +72,8 @@ export interface ActionButtonsProps {
   onSendToDiscord: () => void;
   /** Whether Discord upload is in progress */
   isSendingToDiscord: boolean;
+  /** Whether Discord webhook URL is configured (null = checking) */
+  isDiscordConfigured: boolean | null;
   /** Optional loading state for image generation */
   isGeneratingImage?: boolean;
   /** Optional error message to display */
@@ -128,6 +130,8 @@ export interface UseDiscordUploadReturn {
   uploadImage: (image: Blob, filename: string, message?: string) => Promise<boolean>;
   /** Whether upload is in progress */
   isUploading: boolean;
+  /** Whether Discord webhook URL is configured on the server */
+  isConfigured: boolean | null;
   /** Error from upload, if any */
   error: string | null;
   /** Clear any error */

@@ -1,11 +1,37 @@
 /**
  * Custom hook for managing laundry item counts
  * Extracts state management logic from app/page.tsx
+ * 
+ * Persists counts to localStorage so data survives page reloads.
+ * Only explicit reset clears the persisted data.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { ItemCounts } from '@/lib/types/laundry';
 import { UseLaundryItemsReturn } from '@/lib/types/components';
+
+const STORAGE_KEY_ITEMS = 'silayan_laundry_items';
+const STORAGE_KEY_CUSTOM = 'silayan_laundry_custom_items';
+
+const loadFromStorage = <T,>(key: string, fallback: T): T => {
+  if (typeof window === 'undefined') return fallback;
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw) return JSON.parse(raw) as T;
+  } catch {
+    localStorage.removeItem(key);
+  }
+  return fallback;
+};
+
+const saveToStorage = (key: string, value: unknown) => {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // Storage full or unavailable — silently ignore
+  }
+};
 
 /**
  * Initialize items state from categories data
@@ -29,11 +55,34 @@ const initializeItems = (categories: Record<string, Array<{ name: string }>>): I
 export const useLaundryItems = (
   categories: Record<string, Array<{ name: string }>>
 ): UseLaundryItemsReturn => {
-  // Regular items state (from categories)
-  const [items, setItems] = useState<ItemCounts>(() => initializeItems(categories));
-  
-  // Custom items state (user-added)
-  const [customItems, setCustomItems] = useState<ItemCounts>({});
+  // Restore from localStorage on initial mount
+  const [items, setItems] = useState<ItemCounts>(() =>
+    loadFromStorage(STORAGE_KEY_ITEMS, initializeItems(categories))
+  );
+
+  const [customItems, setCustomItems] = useState<ItemCounts>(() =>
+    loadFromStorage(STORAGE_KEY_CUSTOM, {})
+  );
+
+  // Track whether initial hydration from localStorage has finished
+  const hydrated = useRef(false);
+
+  useEffect(() => {
+    hydrated.current = true;
+  }, []);
+
+  // Persist items to localStorage on every change (skip the initial state set)
+  useEffect(() => {
+    if (hydrated.current) {
+      saveToStorage(STORAGE_KEY_ITEMS, items);
+    }
+  }, [items]);
+
+  useEffect(() => {
+    if (hydrated.current) {
+      saveToStorage(STORAGE_KEY_CUSTOM, customItems);
+    }
+  }, [customItems]);
 
   /**
    * Update item count by delta (increment/decrement)
@@ -79,13 +128,16 @@ export const useLaundryItems = (
   }, []);
 
   /**
-   * Reset all counts to zero
+   * Reset all counts to zero and clear localStorage
    * Regular items are reset to 0, custom items are cleared
    */
   const resetCounts = useCallback(() => {
     if (window.confirm("Are you sure you want to reset all counts? This action cannot be undone.")) {
-      setItems(initializeItems(categories));
+      const empty = initializeItems(categories);
+      setItems(empty);
       setCustomItems({});
+      saveToStorage(STORAGE_KEY_ITEMS, empty);
+      saveToStorage(STORAGE_KEY_CUSTOM, {});
     }
   }, [categories]);
 

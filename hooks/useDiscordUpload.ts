@@ -1,9 +1,10 @@
 /**
  * Custom hook for Discord upload functionality
  * Uses the existing /api/discord route for uploading images
+ * Checks server configuration on mount to warn about missing webhook URL
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { UseDiscordUploadReturn } from '@/lib/types/components';
 
 /**
@@ -12,7 +13,23 @@ import { UseDiscordUploadReturn } from '@/lib/types/components';
  */
 export const useDiscordUpload = (): UseDiscordUploadReturn => {
   const [isUploading, setIsUploading] = useState(false);
+  const [isConfigured, setIsConfigured] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const checked = useRef(false);
+
+  useEffect(() => {
+    if (checked.current) return;
+    checked.current = true;
+
+    fetch('/api/discord')
+      .then((res) => res.json())
+      .then((data: { configured: boolean; validUrl: boolean }) => {
+        setIsConfigured(data.configured && data.validUrl);
+      })
+      .catch(() => {
+        setIsConfigured(false);
+      });
+  }, []);
 
   /**
    * Upload image to Discord via API route
@@ -71,6 +88,7 @@ export const useDiscordUpload = (): UseDiscordUploadReturn => {
   return {
     uploadImage,
     isUploading,
+    isConfigured,
     error,
     clearError
   };
