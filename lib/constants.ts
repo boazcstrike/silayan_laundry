@@ -23,6 +23,10 @@ export const CANVAS_CONFIG = {
   /** Date position near signature */
   SIGNATURE_DATE_X: 850,
   SIGNATURE_DATE_Y: 1214,
+  /** Fallback signer name position when image asset is unavailable */
+  SIGNATURE_NAME_X: 740,
+  SIGNATURE_NAME_Y: 1173,
+  SIGNATURE_NAME_FONT_SIZE: 34,
 } as const;
 
 // File and path constants
@@ -33,6 +37,8 @@ export const FILE_PATHS = {
   SIGNATURE_IMAGE: '/signature_bo.png',
   /** Alternative signature image path */
   SIGNATURE_IMAGE_ALT: '/signature.png',
+  /** Signature image paths in lookup order */
+  SIGNATURE_IMAGES: ['/signature_bo.png', '/signature.png', '/bo_signature.png'] as const,
 } as const;
 
 // Image generation constants
@@ -144,4 +150,6 @@ export const DEFAULTS = {
   COUNT_DELTA: 1,
   /** Default empty string */
   EMPTY_STRING: '',
+  /** Fallback name rendered when the private signature image is missing */
+  SIGNER_NAME: 'Boaz Sze',
 } as const;

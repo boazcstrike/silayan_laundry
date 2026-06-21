@@ -43,6 +43,10 @@ export interface ImageGenerationOptions {
   templatePath: string;
   /** Path to the signature image */
   signaturePath: string;
+  /** Alternative paths to try when the signature image is missing */
+  signatureFallbackPaths?: readonly string[];
+  /** Text to draw when no signature image can be loaded */
+  signerName?: string;
   /** Font size for text rendering (default: 32) */
   fontSize?: number;
   /** Font family for text rendering (default: 'Arial') */

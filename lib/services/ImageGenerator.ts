@@ -17,6 +17,7 @@ import {
   CANVAS_CONFIG, 
   FILE_PATHS, 
   IMAGE_GENERATION,
+  DEFAULTS,
   ERROR_MESSAGES 
 } from '@/lib/constants';
 
@@ -54,6 +55,8 @@ export class CanvasImageGenerator implements IImageGenerator {
     this.options = {
       templatePath: FILE_PATHS.TEMPLATE_IMAGE,
       signaturePath: FILE_PATHS.SIGNATURE_IMAGE,
+      signatureFallbackPaths: FILE_PATHS.SIGNATURE_IMAGES,
+      signerName: DEFAULTS.SIGNER_NAME,
       fontSize: CANVAS_CONFIG.FONT_SIZE,
       fontFamily: CANVAS_CONFIG.FONT_FAMILY,
       textColor: CANVAS_CONFIG.TEXT_COLOR,
@@ -170,24 +173,42 @@ export class CanvasImageGenerator implements IImageGenerator {
    * Draw signature on canvas
    */
   private async drawSignature(ctx: CanvasRenderingContext2D): Promise<void> {
-    try {
-      const signature = await this.loadImage(this.options.signaturePath);
-      
-      ctx.drawImage(
-        signature,
-        CANVAS_CONFIG.SIGNATURE_X,
-        CANVAS_CONFIG.SIGNATURE_Y,
-        signature.width * CANVAS_CONFIG.SIGNATURE_SCALE,
-        signature.height * CANVAS_CONFIG.SIGNATURE_SCALE
-      );
-      
-      // Draw date near signature
-      const today = new Date().toLocaleDateString('en-US');
-      ctx.fillText(today, CANVAS_CONFIG.SIGNATURE_DATE_X, CANVAS_CONFIG.SIGNATURE_DATE_Y);
-    } catch (error) {
-      console.warn('Failed to load signature image:', error);
-      // Continue without signature - not a critical failure
+    const today = new Date().toLocaleDateString('en-US');
+    const signaturePaths = [
+      this.options.signaturePath,
+      ...(this.options.signatureFallbackPaths ?? []),
+    ].filter((path, index, paths): path is string => Boolean(path) && paths.indexOf(path) === index);
+
+    for (const signaturePath of signaturePaths) {
+      try {
+        const signature = await this.loadImage(signaturePath);
+
+        ctx.drawImage(
+          signature,
+          CANVAS_CONFIG.SIGNATURE_X,
+          CANVAS_CONFIG.SIGNATURE_Y,
+          signature.width * CANVAS_CONFIG.SIGNATURE_SCALE,
+          signature.height * CANVAS_CONFIG.SIGNATURE_SCALE
+        );
+        ctx.fillText(today, CANVAS_CONFIG.SIGNATURE_DATE_X, CANVAS_CONFIG.SIGNATURE_DATE_Y);
+        return;
+      } catch (error) {
+        console.warn(`Failed to load signature image at ${signaturePath}:`, error);
+      }
     }
+
+    this.drawSignatureFallback(ctx, today);
+  }
+
+  /**
+   * Draw visible signer information when the private signature asset is missing
+   */
+  private drawSignatureFallback(ctx: CanvasRenderingContext2D, today: string): void {
+    const originalFont = ctx.font;
+    ctx.font = `${CANVAS_CONFIG.SIGNATURE_NAME_FONT_SIZE}px ${this.options.fontFamily || CANVAS_CONFIG.FONT_FAMILY}`;
+    ctx.fillText(this.options.signerName || DEFAULTS.SIGNER_NAME, CANVAS_CONFIG.SIGNATURE_NAME_X, CANVAS_CONFIG.SIGNATURE_NAME_Y);
+    ctx.font = originalFont;
+    ctx.fillText(today, CANVAS_CONFIG.SIGNATURE_DATE_X, CANVAS_CONFIG.SIGNATURE_DATE_Y);
   }
 
   /**

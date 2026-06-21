@@ -41,7 +41,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-public/signature*
+public/*signature*
 
 # AI tooling (local state)
 /.cursor/

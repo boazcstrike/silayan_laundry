@@ -298,22 +298,24 @@ describe('ImageGenerator Service', () => {
         height: number = 600;
         onload: (() => void) | null = null;
         onerror: ((error: Error) => void) | null = null;
+        private readonly imageIndex: number;
         
         constructor() {
           callCount++;
+          this.imageIndex = callCount;
           
-          // First image (template) succeeds, second (signature) fails
+          // First image (template) succeeds, all signature attempts fail.
           setTimeout(() => {
-            if (callCount === 1 && this.onload) {
+            if (this.imageIndex === 1 && this.onload) {
               this.onload();
-            } else if (callCount === 2 && this.onerror) {
+            } else if (this.onerror) {
               this.onerror(new Error('Signature failed'));
             }
           }, 0);
         }
         
         decode() {
-          if (callCount === 1) {
+          if (this.imageIndex === 1) {
             return Promise.resolve();
           }
           return Promise.reject(new Error('Signature decode failed'));

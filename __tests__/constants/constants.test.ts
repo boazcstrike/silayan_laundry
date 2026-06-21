@@ -33,6 +33,9 @@ describe('Application Constants', () => {
       expect(CANVAS_CONFIG.SIGNATURE_SCALE).toBe(0.55);
       expect(CANVAS_CONFIG.SIGNATURE_DATE_X).toBe(850);
       expect(CANVAS_CONFIG.SIGNATURE_DATE_Y).toBe(1214);
+      expect(CANVAS_CONFIG.SIGNATURE_NAME_X).toBe(740);
+      expect(CANVAS_CONFIG.SIGNATURE_NAME_Y).toBe(1173);
+      expect(CANVAS_CONFIG.SIGNATURE_NAME_FONT_SIZE).toBe(34);
     });
 
     it('should have CANVAS_CONFIG values that cannot be modified at runtime', () => {
@@ -52,6 +55,7 @@ describe('Application Constants', () => {
       expect(FILE_PATHS.TEMPLATE_IMAGE).toBe('/template.jpg');
       expect(FILE_PATHS.SIGNATURE_IMAGE).toBe('/signature_bo.png');
       expect(FILE_PATHS.SIGNATURE_IMAGE_ALT).toBe('/signature.png');
+      expect(FILE_PATHS.SIGNATURE_IMAGES).toEqual(['/signature_bo.png', '/signature.png', '/bo_signature.png']);
     });
 
     it('should have FILE_PATHS with correct values', () => {
@@ -228,6 +232,7 @@ describe('Application Constants', () => {
       expect(DEFAULTS.INITIAL_COUNT).toBe(0);
       expect(DEFAULTS.COUNT_DELTA).toBe(1);
       expect(DEFAULTS.EMPTY_STRING).toBe('');
+      expect(DEFAULTS.SIGNER_NAME).toBe('Boaz Sze');
     });
 
     it('should have sensible default values', () => {
