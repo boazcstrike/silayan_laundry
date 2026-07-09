@@ -56,3 +56,6 @@ public/*signature*
 
 # Analytics database (SQLite)
 /data/
+
+# pnpm store (local cache)
+.pnpm-store/
