@@ -9,7 +9,8 @@
     "lint": "eslint . --max-warnings 0",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "db:restore": "node scripts/db-restore.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
@@ -19,6 +20,7 @@
     "clsx": "^2.1.1",
     "lucide-react": "^0.564.0",
     "mongodb": "^7.5.0",
+    "motion": "^12.42.2",
     "next": "16.1.6",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
