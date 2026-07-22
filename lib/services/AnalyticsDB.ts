@@ -53,6 +53,33 @@ export interface FullSubmission extends SubmissionRecord {
 }
 
 /**
+ * Average quantity of an item per laundry batch
+ */
+export interface CategoryAverage {
+  name: string;
+  avgCount: number;
+  totalCount: number;
+  batches: number;
+}
+
+/**
+ * Per-day per-item count row (for the current-load timeline chart)
+ */
+export interface CategoryTimelineRow {
+  day: string;
+  name: string;
+  count: number;
+}
+
+/**
+ * Submissions recorded on a given day
+ */
+export interface DailyCount {
+  day: string;
+  count: number;
+}
+
+/**
  * Analytics summary
  */
 export interface AnalyticsSummary {
@@ -306,6 +333,65 @@ export class AnalyticsDB {
       GROUP BY channel
       ORDER BY count DESC
     `).all() as { channel: SubmissionChannel; count: number; successRate: number }[];
+  }
+
+  /**
+   * Average / total / batch-count per item, ranked by average per batch.
+   * Feeds the "Avg Per Category" chart.
+   */
+  getCategoryAverages(limit: number = 12): CategoryAverage[] {
+    return this.db.prepare(`
+      SELECT
+        item_name as name,
+        ROUND(AVG(count), 1) as avgCount,
+        SUM(count) as totalCount,
+        COUNT(*) as batches
+      FROM submission_items
+      GROUP BY item_name
+      ORDER BY avgCount DESC
+      LIMIT ?
+    `).all(limit) as CategoryAverage[];
+  }
+
+  /**
+   * Per-day, per-item summed counts across all history.
+   * Feeds the current-load timeline chart and the per-category load forecast.
+   */
+  getCategoryTimeline(): CategoryTimelineRow[] {
+    return this.db.prepare(`
+      SELECT date(s.timestamp) as day, si.item_name as name, SUM(si.count) as count
+      FROM submission_items si
+      JOIN submissions s ON s.id = si.submission_id
+      GROUP BY date(s.timestamp), si.item_name
+      ORDER BY day ASC
+    `).all() as CategoryTimelineRow[];
+  }
+
+  /**
+   * Submissions per day for the most recent `limit` days, oldest → newest.
+   */
+  getDailyCounts(limit: number = 7): DailyCount[] {
+    const rows = this.db.prepare(`
+      SELECT date(timestamp) as day, COUNT(*) as count
+      FROM submissions
+      GROUP BY date(timestamp)
+      ORDER BY day DESC
+      LIMIT ?
+    `).all(limit) as DailyCount[];
+    return rows.reverse();
+  }
+
+  /**
+   * Distinct laundry days (ISO YYYY-MM-DD), ascending. Feeds the forecast.
+   */
+  getLaundryDays(): string[] {
+    const rows = this.db.prepare(`
+      SELECT date(timestamp) as day
+      FROM submissions
+      GROUP BY date(timestamp)
+      ORDER BY day ASC
+    `).all() as { day: string }[];
+    return rows.map((row) => String(row.day));
   }
 
   /**

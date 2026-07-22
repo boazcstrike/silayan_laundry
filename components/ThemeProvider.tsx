@@ -9,7 +9,7 @@ import React, {
   createContext,
   useContext,
   useEffect,
-  useState,
+  useSyncExternalStore,
   useCallback,
   useMemo,
 } from "react";
@@ -62,43 +62,54 @@ function applyTheme(theme: Theme): void {
   }
 }
 
+// In-tab subscribers to theme changes. The native `storage` event only fires
+// in *other* tabs, so same-tab writes (setTheme/toggleTheme) notify manually.
+const themeListeners = new Set<() => void>();
+
+function notifyThemeChange(): void {
+  themeListeners.forEach((listener) => listener());
+}
+
+/**
+ * Subscribe to every source that can change the resolved theme: same-tab
+ * writes, cross-tab `storage` events, and system preference changes.
+ */
+function subscribeToTheme(callback: () => void): () => void {
+  themeListeners.add(callback);
+  const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+  window.addEventListener("storage", callback);
+  mediaQuery.addEventListener("change", callback);
+
+  return () => {
+    themeListeners.delete(callback);
+    window.removeEventListener("storage", callback);
+    mediaQuery.removeEventListener("change", callback);
+  };
+}
+
 interface ThemeProviderProps {
   children: React.ReactNode;
 }
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
-  const [theme, setThemeState] = useState<Theme>("light");
-  const [mounted, setMounted] = useState(false);
+  // useSyncExternalStore reads "light" on the server (getServerSnapshot) and
+  // the real value on the client, reconciling after hydration without a
+  // mismatch — no `mounted` guard or setState-in-effect needed.
+  const theme = useSyncExternalStore<Theme>(
+    subscribeToTheme,
+    getInitialTheme,
+    () => "light"
+  );
 
-  // Initialize theme on mount
+  // Sync the resolved theme to the DOM whenever it changes.
   useEffect(() => {
-    const initialTheme = getInitialTheme();
-    setThemeState(initialTheme);
-    applyTheme(initialTheme);
-    setMounted(true);
-  }, []);
-
-  // Listen for system preference changes
-  useEffect(() => {
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-
-    const handleChange = (e: MediaQueryListEvent) => {
-      // Only update if user hasn't set a preference
-      if (!localStorage.getItem(STORAGE_KEY)) {
-        const newTheme = e.matches ? "dark" : "light";
-        setThemeState(newTheme);
-        applyTheme(newTheme);
-      }
-    };
-
-    mediaQuery.addEventListener("change", handleChange);
-    return () => mediaQuery.removeEventListener("change", handleChange);
-  }, []);
+    applyTheme(theme);
+  }, [theme]);
 
   const setTheme = useCallback((newTheme: Theme) => {
-    setThemeState(newTheme);
-    applyTheme(newTheme);
     localStorage.setItem(STORAGE_KEY, newTheme);
+    applyTheme(newTheme);
+    notifyThemeChange();
   }, []);
 
   const toggleTheme = useCallback(() => {
@@ -113,11 +124,6 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     }),
     [theme, toggleTheme, setTheme]
   );
-
-  // Prevent flash of wrong theme
-  if (!mounted) {
-    return null;
-  }
 
   return (
     <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>

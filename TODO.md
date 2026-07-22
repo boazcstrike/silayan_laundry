@@ -106,10 +106,11 @@ Add comprehensive testing for new hooks and components, implement polish feature
 4. ✅ **Verified React Testing Library best practices** - Used proper `act()` patterns and wrapper components
 
 ### **3.4 Documentation** (Priority: Medium)
-1. Update `GEMINI.md` with new architecture overview
+1. ✅ Update `GEMINI.md` with new architecture overview (+ data layer)
 2. Add component API documentation
 3. Create usage examples for hooks
 4. Update `AGENTS.md` with Phase 3 completion notes
+5. ✅ **Data layer**: `docs/data-layer.md` — SQLite + MongoDB dual-write architecture (linked from `AGENTS.md`, `GEMINI.md`, `README.md`)
 
 ### **Success Criteria**
 - **Test coverage**: 90%+ for hooks and components
