@@ -55,20 +55,26 @@ const initializeItems = (categories: Record<string, Array<{ name: string }>>): I
 export const useLaundryItems = (
   categories: Record<string, Array<{ name: string }>>
 ): UseLaundryItemsReturn => {
-  // Restore from localStorage on initial mount
+  // SSR-safe initial state: server and client's first render must match, so we
+  // start from the fallback (no localStorage read here) and restore persisted
+  // counts in a mount effect below. Reading storage in the initializer would
+  // make the hydration render diverge from the server HTML.
   const [items, setItems] = useState<ItemCounts>(() =>
-    loadFromStorage(STORAGE_KEY_ITEMS, initializeItems(categories))
+    initializeItems(categories)
   );
 
-  const [customItems, setCustomItems] = useState<ItemCounts>(() =>
-    loadFromStorage(STORAGE_KEY_CUSTOM, {})
-  );
+  const [customItems, setCustomItems] = useState<ItemCounts>({});
 
   // Track whether initial hydration from localStorage has finished
   const hydrated = useRef(false);
 
+  // Restore from localStorage after mount, then enable persistence.
   useEffect(() => {
+    setItems(loadFromStorage(STORAGE_KEY_ITEMS, initializeItems(categories)));
+    setCustomItems(loadFromStorage(STORAGE_KEY_CUSTOM, {}));
     hydrated.current = true;
+    // Mount-only restore; categories is stable for the component's lifetime.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Persist items to localStorage on every change (skip the initial state set)

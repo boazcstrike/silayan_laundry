@@ -6,6 +6,9 @@
 Every laundry submission is written to **two** stores and read back for the analytics
 dashboard. This page explains the shape, the flow, and the decisions behind it.
 
+> **Local restore points:** while Mongo is unavailable, the server snapshots the SQLite DB on
+> every start. See [`backups.md`](./backups.md).
+
 ## TL;DR
 
 - **SQLite** (`data/analytics.db`, `better-sqlite3`) — local, synchronous, always present. The

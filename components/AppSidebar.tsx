@@ -16,6 +16,8 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 
+// The Tumble Deck "Full Deck" design is now the counter itself (see app/page).
+// The standalone "Proposed designs" section is retired.
 const NAV_ITEMS = [
   { href: "/", icon: Shirt, label: "Counter" },
   { href: "/analytics", icon: ChartColumn, label: "Analytics" },
@@ -53,7 +55,7 @@ export function AppSidebar() {
             {NAV_ITEMS.map(({ href, icon: Icon, label }) => (
               <SidebarMenuItem key={href}>
                 <SidebarMenuButton
-                  isActive={pathname === href}
+                  isActive={href === "/" ? pathname === "/" : pathname.startsWith(href)}
                   tooltip={label}
                   render={<Link href={href} />}
                 >

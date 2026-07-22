@@ -12,8 +12,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
+// The empty "Overview" hub is retired; proposed designs now live under the
+// Counter section in the sidebar. Keep only the real proposal(s) here.
 const PROPOSALS = [
-  { href: "/design", label: "Overview", short: "★" },
   { href: "/design/b", label: "Full Deck", short: "B" },
 ] as const;
 
@@ -32,10 +33,7 @@ export default function DesignLayout({
           className="mx-auto flex max-w-6xl items-center gap-1 overflow-x-auto px-4 py-2"
         >
           {PROPOSALS.map((p) => {
-            const active =
-              p.href === "/design"
-                ? pathname === "/design"
-                : pathname === p.href;
+            const active = pathname === p.href;
             return (
               <Link
                 key={p.href}

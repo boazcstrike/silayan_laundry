@@ -99,12 +99,12 @@ export function getIconKey(name: string): GlyphKey {
 export function getItemTint(category: string): string {
   switch (category) {
     case "Regular Laundry":
-      return "var(--chart-2)";
+      return "var(--tint-regular)";
     case "Home Items":
-      return "var(--chart-3)";
+      return "var(--tint-home)";
     case "Other Items":
-      return "var(--chart-5)";
+      return "var(--tint-other)";
     default:
-      return "var(--chart-2)";
+      return "var(--tint-regular)";
   }
 }

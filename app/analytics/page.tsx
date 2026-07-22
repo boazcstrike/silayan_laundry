@@ -2,11 +2,22 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
+import { motion, useReducedMotion } from "motion/react";
 import { CalendarClock, ChartColumn, Shirt, Sparkles } from "lucide-react";
 
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { AnalyticsResponse } from "@/components/analytics/types";
+import {
+  containerVariants,
+  itemVariants,
+  microContainerVariants,
+  microItemVariants,
+  CountUp,
+  DUR,
+  EASE_OUT,
+  EASE_EMPHASIZED,
+} from "@/components/analytics/motion";
 
 const CategoryAverageChart = dynamic(
   () =>
@@ -81,6 +92,13 @@ function describeNextLaundry(
 
 export default function AnalyticsPage() {
   const [analytics, setAnalytics] = useState<AnalyticsResponse | null>(null);
+  const reduce = useReducedMotion();
+
+  // Container/item entrance props, disabled wholesale under reduced motion.
+  const revealContainer = reduce
+    ? {}
+    : { variants: containerVariants, initial: "hidden", animate: "show" };
+  const revealItem = reduce ? {} : { variants: itemVariants };
 
   const loadData = useCallback(async () => {
     const res = await fetch("/api/analytics", { cache: "no-store" });
@@ -130,17 +148,21 @@ export default function AnalyticsPage() {
   return (
     <div className="dashboard-shell">
       <div className="dashboard-content dashboard-stack">
-        <div className="laundry-overview-grid fade-up">
-          <header className="hero card dashboard-card dashboard-card-hero fade-up">
+        <motion.div className="laundry-overview-grid" {...revealContainer}>
+          <motion.header
+            className="hero card dashboard-card dashboard-card-hero"
+            {...revealItem}
+          >
             <p className="dashboard-kicker">Laundry Operations</p>
             <h1>
               <Shirt size={20} className="icon-inline" /> Laundry Analytics
             </h1>
-          </header>
+          </motion.header>
 
-          <section
+          <motion.section
             className="card dashboard-card dashboard-card-analytics laundry-summary-card"
             aria-labelledby="laundry-summary-heading"
+            {...revealItem}
           >
             <header className="dashboard-card-header">
               <h2 id="laundry-summary-heading">
@@ -177,10 +199,17 @@ export default function AnalyticsPage() {
               >
                 <div className="success-meter-head">
                   <span className="meta-label">Success rate</span>
-                  <strong>{successRate}%</strong>
+                  <strong>
+                    <CountUp value={successRate} suffix="%" />
+                  </strong>
                 </div>
                 <div className="success-meter-track">
-                  <div className="success-meter-fill" style={{ width: `${successRate}%` }} />
+                  <motion.div
+                    className="success-meter-fill"
+                    initial={reduce ? false : { width: 0 }}
+                    animate={{ width: `${successRate}%` }}
+                    transition={{ duration: DUR.slow, ease: EASE_EMPHASIZED, delay: 0.15 }}
+                  />
                 </div>
               </div>
               <Table>
@@ -188,7 +217,11 @@ export default function AnalyticsPage() {
                   <TableRow>
                     <TableCell className="text-muted-foreground">Total submissions</TableCell>
                     <TableCell className="text-right font-mono font-medium">
-                      {analytics?.totalSubmissions ?? "-"}
+                      {analytics ? (
+                        <CountUp value={analytics.totalSubmissions} />
+                      ) : (
+                        "-"
+                      )}
                     </TableCell>
                   </TableRow>
                   <TableRow>
@@ -201,13 +234,21 @@ export default function AnalyticsPage() {
                     <TableCell className="text-muted-foreground">Next load by category</TableCell>
                     <TableCell className="whitespace-normal text-right font-mono font-medium">
                       {topForecastCategories.length ? (
-                        <ul className="flex flex-col gap-1">
+                        <motion.ul
+                          className="flex flex-col gap-1"
+                          variants={reduce ? undefined : microContainerVariants}
+                          initial={reduce ? false : "hidden"}
+                          animate={reduce ? false : "show"}
+                        >
                           {topForecastCategories.map((category) => (
-                            <li key={category.name}>
+                            <motion.li
+                              key={category.name}
+                              variants={reduce ? undefined : microItemVariants}
+                            >
                               {category.name}: {category.total}
-                            </li>
+                            </motion.li>
                           ))}
-                        </ul>
+                        </motion.ul>
                       ) : (
                         "-"
                       )}
@@ -216,10 +257,10 @@ export default function AnalyticsPage() {
                 </TableBody>
               </Table>
             </div>
-          </section>
-        </div>
+          </motion.section>
+        </motion.div>
 
-        <Tabs defaultValue="current" className="laundry-tabs fade-up delay-2">
+        <Tabs defaultValue="current" className="laundry-tabs">
           <TabsList className="laundry-tabs-list">
             <TabsTrigger value="current">
               <ChartColumn data-icon="inline-start" /> Current
@@ -229,9 +270,12 @@ export default function AnalyticsPage() {
             </TabsTrigger>
           </TabsList>
           <TabsContent value="forecasting">
-            <section
+            <motion.section
               className="card dashboard-card dashboard-card-forecast"
               aria-labelledby="laundry-forecast-heading"
+              initial={reduce ? false : { opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: DUR.standard, ease: EASE_OUT }}
             >
               <header className="dashboard-card-header">
                 <h2 id="laundry-forecast-heading">
@@ -239,10 +283,15 @@ export default function AnalyticsPage() {
                 </h2>
               </header>
               <LaundryForecastPanel forecast={forecast} intervalHistory={intervalHistory} />
-            </section>
+            </motion.section>
           </TabsContent>
           <TabsContent value="current">
-            <div className="dashboard-grid laundry-current-grid">
+            <motion.div
+              className="dashboard-grid laundry-current-grid"
+              initial={reduce ? false : { opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: DUR.standard, ease: EASE_OUT }}
+            >
               <section
                 className="card dashboard-card dashboard-card-analytics"
                 aria-labelledby="laundry-current-heading"
@@ -278,14 +327,24 @@ export default function AnalyticsPage() {
                     <div className="list-block">
                       <h3>Last 7 Days</h3>
                       <div className="bars">
-                        {daily.map((d) => {
+                        {daily.map((d, index) => {
                           const height = Math.max(
                             8,
                             Math.round((Number(d.count) / dailyMax) * 100),
                           );
                           return (
                             <div key={d.day} className="bar-wrap">
-                              <div className="bar" style={{ height: `${height}px` }} />
+                              <motion.div
+                                className="bar"
+                                style={{ height: `${height}px` }}
+                                initial={reduce ? false : { scaleY: 0 }}
+                                animate={{ scaleY: 1 }}
+                                transition={{
+                                  duration: DUR.standard,
+                                  ease: EASE_OUT,
+                                  delay: 0.1 + index * 0.05,
+                                }}
+                              />
                               <span>{String(d.day).slice(5)}</span>
                               <strong>{d.count}</strong>
                             </div>
@@ -297,7 +356,7 @@ export default function AnalyticsPage() {
                   </div>
                 </div>
               </section>
-            </div>
+            </motion.div>
           </TabsContent>
         </Tabs>
       </div>

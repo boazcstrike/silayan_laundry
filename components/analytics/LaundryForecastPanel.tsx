@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { motion, useReducedMotion } from "motion/react";
 import { CalendarClock, Info } from "lucide-react";
 import {
   Area,
@@ -33,6 +34,13 @@ import {
 import type { IntervalPoint } from "@/lib/laundryForecast";
 import { ForecastLoadChart } from "@/components/analytics/ForecastLoadChart";
 import type { ForecastPayload } from "@/components/analytics/types";
+import {
+  CountUp,
+  DUR,
+  EASE_OUT,
+  microContainerVariants,
+  microItemVariants,
+} from "@/components/analytics/motion";
 
 const chartConfig: ChartConfig = {
   predicted: { label: "Predicted day", color: "var(--chart-3)" },
@@ -197,6 +205,7 @@ export function LaundryForecastPanel({
   forecast: ForecastPayload | null;
   intervalHistory?: IntervalPoint[];
 }) {
+  const reduce = useReducedMotion();
   const projection = useMemo(() => forecast?.projection ?? [], [forecast]);
 
   const chartData = useMemo<ProjectionChartPoint[]>(
@@ -255,7 +264,12 @@ export function LaundryForecastPanel({
 
   return (
     <div className="dashboard-card-body forecast-body">
-      <div className="forecast-hero">
+      <motion.div
+        className="forecast-hero"
+        initial={reduce ? false : { opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: DUR.standard, ease: EASE_OUT }}
+      >
         <div className="forecast-next">
           <span className="meta-label">Next laundry</span>
           <strong className={`forecast-date ${overdue ? "forecast-overdue" : ""}`}>
@@ -269,21 +283,44 @@ export function LaundryForecastPanel({
             {formatDate(nextLaundryDateHigh, { month: "short", day: "numeric" })}
           </p>
         </div>
-        <div className="forecast-pills">
-          <div className="forecast-pill">
+        <motion.div
+          className="forecast-pills"
+          variants={reduce ? undefined : microContainerVariants}
+          initial={reduce ? false : "hidden"}
+          animate={reduce ? false : "show"}
+        >
+          <motion.div
+            className="forecast-pill"
+            variants={reduce ? undefined : microItemVariants}
+            whileHover={reduce ? undefined : { y: -3 }}
+          >
             <span className="meta-label">Cycle</span>
-            <strong>~{averageGapDays}d</strong>
-          </div>
-          <div className="forecast-pill">
+            <strong>
+              ~<CountUp value={averageGapDays} suffix="d" />
+            </strong>
+          </motion.div>
+          <motion.div
+            className="forecast-pill"
+            variants={reduce ? undefined : microItemVariants}
+            whileHover={reduce ? undefined : { y: -3 }}
+          >
             <span className="meta-label">Confidence</span>
-            <strong>{Math.round(confidence * 100)}%</strong>
-          </div>
-          <div className="forecast-pill">
+            <strong>
+              <CountUp value={Math.round(confidence * 100)} suffix="%" />
+            </strong>
+          </motion.div>
+          <motion.div
+            className="forecast-pill"
+            variants={reduce ? undefined : microItemVariants}
+            whileHover={reduce ? undefined : { y: -3 }}
+          >
             <span className="meta-label">Next 6 mo</span>
-            <strong>{projection.length} days</strong>
-          </div>
-        </div>
-      </div>
+            <strong>
+              <CountUp value={projection.length} suffix=" days" />
+            </strong>
+          </motion.div>
+        </motion.div>
+      </motion.div>
 
       {intervalHistory.length ? (
         <div className="forecast-chart-block">
@@ -414,9 +451,20 @@ export function LaundryForecastPanel({
           <div className="forecast-section-head">
             <h3>Upcoming days</h3>
           </div>
-          <ul className="forecast-chips">
+          <motion.ul
+            className="forecast-chips"
+            variants={reduce ? undefined : microContainerVariants}
+            initial={reduce ? false : "hidden"}
+            whileInView={reduce ? undefined : "show"}
+            viewport={{ once: true, margin: "-40px" }}
+          >
             {upcoming.map((point) => (
-              <li key={point.date} className="forecast-chip">
+              <motion.li
+                key={point.date}
+                className="forecast-chip"
+                variants={reduce ? undefined : microItemVariants}
+                whileHover={reduce ? undefined : { y: -3 }}
+              >
                 <span className="forecast-chip-weekday">
                   {formatDate(point.date, { weekday: "short" })}
                 </span>
@@ -426,9 +474,9 @@ export function LaundryForecastPanel({
                 <span className="forecast-chip-spread">
                   {point.spreadDays > 0 ? `±${point.spreadDays}d` : "exact"}
                 </span>
-              </li>
+              </motion.li>
             ))}
-          </ul>
+          </motion.ul>
         </div>
       ) : null}
 

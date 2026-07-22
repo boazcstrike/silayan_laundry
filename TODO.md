@@ -131,6 +131,19 @@ Add comprehensive testing for new hooks and components, implement polish feature
 - **Accessibility**: WCAG 2.1 AA compliance for critical interactions
 - **Documentation**: Comprehensive guides for new architecture
 
+## Backlog — Backups
+- **Off-machine snapshot copy** — local startup snapshots exist (see
+  [`docs/backups.md`](./docs/backups.md)) but sit on the same disk as the live DB. Add an
+  off-machine copy for disaster recovery. Options captured: **A)** Cloudflare R2 (deferred —
+  no spend / no card for now), **B)** synced folder via `BACKUP_MIRROR_DIR`. Pick next session.
+
+## Backlog — Deployment
+- **Deploy to Cloudflare (separate account)** — researched, not started. Account/token
+  isolation is solved; persistence needs rework (`better-sqlite3` can't run on workerd;
+  Mongo works with `nodejs_compat` + direct URI). Options + steps in
+  [`docs/deploy-cloudflare.md`](./docs/deploy-cloudflare.md). **Action:** revoke the
+  compromised research token first.
+
 ## Notes for Agents
 When working on this codebase:
 1. **Always check `AGENTS.md` first** for collaboration guidelines

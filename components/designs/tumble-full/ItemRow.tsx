@@ -65,7 +65,7 @@ export function ItemRow({
           const parsed = Number.parseInt(e.target.value, 10);
           onSet(name, Number.isNaN(parsed) ? 0 : parsed, isCustom);
         }}
-        className="h-11 w-12 rounded-lg border bg-background text-center text-sm font-semibold tabular-nums text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+        className="no-spinner h-11 w-12 rounded-lg border bg-background text-center text-sm font-semibold tabular-nums text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
       />
 
       <button

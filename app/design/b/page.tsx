@@ -1,8 +1,9 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import categories from "@/app/assets/data/list";
-import TumbleFull from "@/components/designs/tumble-full/TumbleFull";
-
+/**
+ * "Full Deck" was promoted to the real counter at /. This route now forwards
+ * there so the old proposal URL keeps working.
+ */
 export default function DesignBPage() {
-  return <TumbleFull categories={categories} />;
+  redirect("/");
 }

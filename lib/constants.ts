@@ -142,6 +142,22 @@ export const CATEGORY_NAMES = {
   OTHER_ITEMS: 'Other Items',
 } as const;
 
+// SQLite backup / restore-point settings
+export const BACKUP = {
+  /** Directory (under data/) where startup snapshots are written */
+  DIR_NAME: 'backups',
+  /** Filename prefix for a snapshot: `<PREFIX><timestamp>.db` */
+  FILE_PREFIX: 'analytics-',
+  /** File extension for a snapshot */
+  FILE_EXT: '.db',
+  /** Keep this many most-recent snapshots; older ones are pruned */
+  RETENTION: 10,
+  /** Env var (set to 'false'/'0') to disable the on-startup snapshot */
+  ENABLED_ENV: 'BACKUP_ON_STARTUP',
+  /** Env var to override RETENTION at runtime */
+  RETENTION_ENV: 'BACKUP_RETENTION',
+} as const;
+
 // Default values
 export const DEFAULTS = {
   /** Default count for new items */

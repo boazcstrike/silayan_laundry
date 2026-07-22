@@ -1,18 +1,16 @@
 "use client";
 
 /**
- * Main page component for the laundry counter application
- * Uses the new modular architecture with hooks and components
+ * Main page — the laundry counter.
+ *
+ * The Tumble Deck "Full Deck" design is now the real counter UI (it replaced
+ * the legacy LaundryCounter). Per-item icons, batches of 15 = one wash load,
+ * and the full Download / Discord / Reset actions.
  */
 
-import React from 'react';
-import { LaundryCounter } from '@/components/LaundryCounter';
-import categories from '@/app/assets/data/list';
+import categories from "@/app/assets/data/list";
+import TumbleFull from "@/components/designs/tumble-full/TumbleFull";
 
-/**
- * Home page component
- * Renders the laundry counter with categories data
- */
 export default function HomePage() {
-  return <LaundryCounter categories={categories} />;
+  return <TumbleFull categories={categories} />;
 }

@@ -68,6 +68,10 @@
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
+  /* Laundry category tints — calm, non-alarming, distinct hues (teal/indigo/violet) */
+  --tint-regular: var(--chart-2);
+  --tint-home: oklch(0.52 0.15 262);
+  --tint-other: oklch(0.55 0.2 305);
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
@@ -102,6 +106,10 @@
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
+  /* Laundry category tints — dark variants (readable, white-text-safe) */
+  --tint-regular: var(--chart-2);
+  --tint-home: oklch(0.66 0.15 262);
+  --tint-other: oklch(0.66 0.19 305);
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.488 0.243 264.376);
@@ -129,6 +137,45 @@
   input.no-spinner[type='number'] {
     -moz-appearance: textfield;
     appearance: textfield;
+  }
+
+  /* Themed scrollbars — track blends with background, thumb uses border/muted
+     tokens so it adapts to light/dark automatically. Ring token on hover. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklch, var(--muted-foreground) 45%, transparent)
+      transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: color-mix(in oklch, var(--muted-foreground) 40%, transparent);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    transition: background 0.2s ease;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in oklch, var(--muted-foreground) 65%, transparent);
+    background-clip: padding-box;
+  }
+
+  ::-webkit-scrollbar-thumb:active {
+    background: color-mix(in oklch, var(--ring) 80%, transparent);
+    background-clip: padding-box;
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: transparent;
   }
 }
 
@@ -194,6 +241,32 @@
     color-mix(in oklch, var(--primary) 12%, var(--card)),
     var(--card)
   );
+  background-size: 160% 160%;
+  animation: dashboard-hero-drift 14s ease-in-out infinite;
+}
+
+@keyframes dashboard-hero-drift {
+  0%,
+  100% {
+    background-position: 0% 0%;
+  }
+  50% {
+    background-position: 100% 100%;
+  }
+}
+
+/* Card hover: gentle lift + shadow (secondary depth layer). */
+.laundry-summary-card,
+.dashboard-card-forecast {
+  transition:
+    transform 0.25s cubic-bezier(0.2, 0, 0, 1),
+    box-shadow 0.25s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.laundry-summary-card:hover,
+.dashboard-card-forecast:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px -18px color-mix(in oklch, var(--foreground) 55%, transparent);
 }
 
 .dashboard-kicker {
@@ -318,10 +391,78 @@
   background: linear-gradient(
     120deg,
     transparent 40%,
-    color-mix(in oklch, var(--foreground) 6%, transparent) 50%,
+    color-mix(in oklch, var(--foreground) 8%, transparent) 50%,
     transparent 60%
   );
   pointer-events: none;
+  /* Ambient layer: a slow light sweep that keeps the hero feeling alive. */
+  background-size: 220% 100%;
+  background-position: 140% 0;
+  animation: forecast-sheen-sweep 4.5s ease-in-out 0.6s infinite;
+}
+
+@keyframes forecast-sheen-sweep {
+  0% {
+    background-position: 140% 0;
+  }
+  35%,
+  100% {
+    background-position: -40% 0;
+  }
+}
+
+/* Urgency: the icon breathes when laundry is soon or overdue. */
+.forecast-highlight-soon .forecast-highlight-icon,
+.forecast-highlight-overdue .forecast-highlight-icon {
+  animation: forecast-icon-pulse 1.8s ease-in-out infinite;
+}
+
+.forecast-highlight-overdue .forecast-highlight-icon {
+  color: var(--destructive);
+}
+
+@keyframes forecast-icon-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 color-mix(in oklch, var(--primary) 35%, transparent);
+  }
+  50% {
+    transform: scale(1.06);
+    box-shadow: 0 0 0 6px color-mix(in oklch, var(--primary) 0%, transparent);
+  }
+}
+
+.forecast-highlight-overdue .forecast-highlight-icon {
+  animation-name: forecast-icon-pulse-alert;
+}
+
+@keyframes forecast-icon-pulse-alert {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 color-mix(in oklch, var(--destructive) 40%, transparent);
+  }
+  50% {
+    transform: scale(1.06);
+    box-shadow: 0 0 0 6px color-mix(in oklch, var(--destructive) 0%, transparent);
+  }
+}
+
+.forecast-highlight-spark {
+  animation: forecast-spark-twinkle 2.4s ease-in-out infinite;
+}
+
+@keyframes forecast-spark-twinkle {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(0.9) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15) rotate(12deg);
+  }
 }
 
 .forecast-highlight-icon {
@@ -455,6 +596,15 @@
   border: 1px solid var(--border);
   background: var(--muted);
   min-width: 4.5rem;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.forecast-pill:hover {
+  border-color: color-mix(in oklch, var(--primary) 40%, var(--border));
+  box-shadow: 0 4px 14px -6px color-mix(in oklch, var(--primary) 45%, transparent);
 }
 
 .forecast-pill strong {
@@ -515,6 +665,14 @@
   border: 1px solid var(--border);
   background: var(--card);
   min-width: 4rem;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.forecast-chip:hover {
+  border-color: color-mix(in oklch, var(--chart-3) 45%, var(--border));
+  box-shadow: 0 4px 14px -6px color-mix(in oklch, var(--chart-3) 45%, transparent);
 }
 
 .forecast-chip-weekday {
@@ -573,7 +731,17 @@
   width: 100%;
   max-width: 1.6rem;
   border-radius: var(--radius-sm) var(--radius-sm) 0 0;
-  background: var(--chart-1);
+  background: linear-gradient(
+    to top,
+    var(--chart-1),
+    color-mix(in oklch, var(--chart-1) 70%, var(--chart-5))
+  );
+  transform-origin: bottom center;
+  transition: filter 0.18s ease;
+}
+
+.bar-wrap:hover .bar {
+  filter: brightness(1.12);
 }
 
 .bar-wrap span {
@@ -607,7 +775,25 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .fade-up {
+  .fade-up,
+  .forecast-highlight-sheen,
+  .forecast-highlight-soon .forecast-highlight-icon,
+  .forecast-highlight-overdue .forecast-highlight-icon,
+  .forecast-highlight-spark,
+  .dashboard-card-hero {
     animation: none;
+  }
+
+  .laundry-summary-card,
+  .dashboard-card-forecast,
+  .forecast-pill,
+  .forecast-chip,
+  .bar {
+    transition: none;
+  }
+
+  .laundry-summary-card:hover,
+  .dashboard-card-forecast:hover {
+    transform: none;
   }
 }
