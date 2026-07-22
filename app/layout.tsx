@@ -26,11 +26,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning
       >
+        {/* Apply persisted dark mode + color palette before first paint to
+            avoid a flash of the default theme. Mirrors ThemeProvider logic. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{var t=localStorage.getItem("theme");var d=t?t==="dark":matchMedia("(prefers-color-scheme: dark)").matches;if(d)document.documentElement.classList.add("dark");var p=localStorage.getItem("palette");if(p&&p!=="default")document.documentElement.dataset.palette=p;}catch(e){}`,
+          }}
+        />
         <ErrorBoundary>
           <ThemeProvider>
             <AppShell>{children}</AppShell>

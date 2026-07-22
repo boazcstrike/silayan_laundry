@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "./themes.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -72,6 +73,9 @@
   --tint-regular: var(--chart-2);
   --tint-home: oklch(0.52 0.15 262);
   --tint-other: oklch(0.55 0.2 305);
+  /* Warm "banked load" accent — deliberately off the teal/indigo/violet cool
+     ramp so the reward moment (gauge crest, +1 chip, load badges) pops. */
+  --load-pop: oklch(0.68 0.18 45);
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
@@ -110,6 +114,7 @@
   --tint-regular: var(--chart-2);
   --tint-home: oklch(0.66 0.15 262);
   --tint-other: oklch(0.66 0.19 305);
+  --load-pop: oklch(0.74 0.16 55);
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.488 0.243 264.376);

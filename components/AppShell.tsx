@@ -3,6 +3,7 @@
 import * as React from "react";
 
 import { AppSidebar } from "@/components/AppSidebar";
+import { PalettePicker } from "@/components/PalettePicker";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import {
   SidebarInset,
@@ -23,6 +24,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b bg-background/80 px-4 backdrop-blur">
           <SidebarTrigger />
           <div className="flex-1" />
+          <PalettePicker />
           <ThemeToggle />
         </header>
         <div className="flex flex-1 flex-col">{children}</div>

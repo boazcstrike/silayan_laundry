@@ -23,6 +23,15 @@ const COPY: Record<Mood, string> = {
   full: "Load complete!",
 };
 
+// Bubble hue tracks progress so it warms up toward a full load instead of
+// sitting on one green the whole time.
+const MOOD_TINT: Record<Mood, string> = {
+  empty: "var(--chart-2)",
+  filling: "var(--chart-2)",
+  half: "var(--tint-home)",
+  full: "var(--load-pop)",
+};
+
 /**
  * A tiny CSS-shape mascot (a soap-bubble face) that reacts to the load state.
  * No emoji — eyes and mouth are pure divs so it themes cleanly in dark/light.
@@ -35,8 +44,8 @@ export function Mascot({ total, fill }: MascotProps) {
     <div className="flex items-center gap-2">
       <motion.div
         aria-hidden="true"
-        className="relative grid size-11 place-items-center rounded-full border"
-        style={{ background: "color-mix(in oklch, var(--chart-2) 22%, var(--card))" }}
+        className="relative grid size-11 place-items-center rounded-full border transition-colors duration-500"
+        style={{ background: `color-mix(in oklch, ${MOOD_TINT[mood]} 22%, var(--card))` }}
         animate={reduce ? undefined : { y: mood === "full" ? [0, -3, 0] : 0 }}
         transition={{ duration: 0.6, repeat: mood === "full" ? Infinity : 0, repeatDelay: 0.8 }}
       >

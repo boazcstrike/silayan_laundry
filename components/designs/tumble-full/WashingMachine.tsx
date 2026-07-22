@@ -9,10 +9,15 @@
  * keeps its existing spin/fill and everything else here is static.
  */
 
-import { motion, useReducedMotion } from "motion/react";
+import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Drum } from "./Drum";
+import { LoadBurst, type BurstPoint } from "./LoadBurst";
 import type { PileStyle } from "./PileStyles";
 import type { DrumUnit } from "./types";
+
+// Snappy arcade burst throws a handful of glyphs — too many clutters the pop.
+const BURST_ICON_CAP = 8;
 
 export type MachineVariant = "signature" | "retro";
 
@@ -89,9 +94,57 @@ export function WashingMachine({
   const reduce = useReducedMotion();
   const shake = isWashing && !reduce;
 
+  // --- "load banked" burst: fires the instant a wash finishes (isWashing
+  // true -> false). Glyphs erupt from the porthole and a "+1 LOAD" chip flies
+  // to the LED counter, which then pops. Coordinates are measured against the
+  // machine body at fire time. Never runs under reduced motion.
+  const machineRef = useRef<HTMLDivElement>(null);
+  const ledRef = useRef<HTMLDivElement>(null);
+  const portholeRef = useRef<HTMLDivElement>(null);
+  const wasWashing = useRef(isWashing);
+  const burstUnits = useRef<DrumUnit[]>(units);
+  const burstSeq = useRef(0);
+  const [popKey, setPopKey] = useState(0);
+  const [burst, setBurst] = useState<
+    | { key: number; origin: BurstPoint; target: BurstPoint; icons: DrumUnit[] }
+    | null
+  >(null);
+
+  // Keep a snapshot of the load's glyphs while it washes — by the time the
+  // wash ends the drum has already emptied its `units`.
+  useEffect(() => {
+    if (isWashing && units.length > 0) burstUnits.current = units;
+  }, [isWashing, units]);
+
+  useEffect(() => {
+    const finishedWash = wasWashing.current && !isWashing;
+    wasWashing.current = isWashing;
+    if (!finishedWash || reduce) return;
+
+    const body = machineRef.current?.getBoundingClientRect();
+    const led = ledRef.current?.getBoundingClientRect();
+    const port = portholeRef.current?.getBoundingClientRect();
+    if (!body || !led || !port) return;
+
+    burstSeq.current += 1;
+    setBurst({
+      key: burstSeq.current,
+      origin: {
+        x: port.left + port.width / 2 - body.left,
+        y: port.top + port.height / 2 - body.top,
+      },
+      target: {
+        x: led.left + led.width / 2 - body.left,
+        y: led.top + led.height / 2 - body.top,
+      },
+      icons: burstUnits.current.slice(0, BURST_ICON_CAP),
+    });
+  }, [isWashing, reduce]);
+
   return (
     <div className="mx-auto w-full max-w-[17rem]">
       <motion.div
+        ref={machineRef}
         className={`relative rounded-[1.9rem] border-2 p-3 pb-6 shadow-lg ${c.body}`}
         animate={shake ? { x: [0, -1.5, 1.5, -1.5, 1.5, 0], y: [0, 1, -1, 1, -1, 0] } : { x: 0, y: 0 }}
         transition={shake ? { duration: 0.35, repeat: Infinity, ease: "easeInOut" } : { duration: 0.2 }}
@@ -103,6 +156,7 @@ export function WashingMachine({
           </div>
           {/* LED loads counter — labelled so the number reads as "loads done". */}
           <div
+            ref={ledRef}
             className={`flex h-8 w-16 flex-col items-center justify-center rounded-md font-mono leading-none ${c.display}`}
             aria-label={
               isWashing
@@ -121,7 +175,14 @@ export function WashingMachine({
             ) : (
               <>
                 <span className="flex items-baseline gap-0.5">
-                  <span className="text-sm font-bold tabular-nums">{loadsDone}</span>
+                  <motion.span
+                    key={popKey}
+                    className="text-sm font-bold tabular-nums"
+                    animate={popKey > 0 && !reduce ? { scale: [1, 1.6, 1] } : { scale: 1 }}
+                    transition={{ duration: 0.4, ease: "easeOut" }}
+                  >
+                    {loadsDone}
+                  </motion.span>
                   <span className="text-[0.5rem] font-semibold opacity-80">LOADS</span>
                 </span>
                 <span className="mt-0.5 text-[0.4rem] font-semibold tracking-[0.15em] opacity-60">
@@ -139,7 +200,7 @@ export function WashingMachine({
         </div>
 
         {/* Door: hinge (left) + porthole (icon chamber) + handle (right) */}
-        <div className="relative">
+        <div ref={portholeRef} className="relative">
           {/* hinge stubs */}
           <span
             className={`absolute top-[36%] left-[-2px] z-10 h-6 w-1.5 -translate-y-1/2 rounded-full ${c.door}`}
@@ -176,6 +237,23 @@ export function WashingMachine({
         {/* Feet */}
         <span className={`absolute -bottom-2 left-7 h-3 w-7 rounded-b-md ${c.feet}`} aria-hidden="true" />
         <span className={`absolute -bottom-2 right-7 h-3 w-7 rounded-b-md ${c.feet}`} aria-hidden="true" />
+
+        {/* "Load banked" burst: glyphs erupt from the porthole, a +1 chip flies
+            to the LED counter, then the counter pops. */}
+        <AnimatePresence>
+          {burst ? (
+            <LoadBurst
+              key={burst.key}
+              origin={burst.origin}
+              target={burst.target}
+              icons={burst.icons}
+              onDone={() => {
+                setPopKey((k) => k + 1);
+                setBurst(null);
+              }}
+            />
+          ) : null}
+        </AnimatePresence>
       </motion.div>
     </div>
   );
