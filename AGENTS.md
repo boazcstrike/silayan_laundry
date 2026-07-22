@@ -6,6 +6,10 @@ This repository includes guidance for automated coding agents.
 
 Read `GEMINI.md` for the detailed project context (overview, setup, conventions, and TODOs).
 
+For how submissions are stored and read — the SQLite + MongoDB dual-write data layer — see
+[`docs/data-layer.md`](docs/data-layer.md). Any change to persistence, analytics reads, or the
+`/api/submissions` and `/api/analytics` routes should start there.
+
 ## Code Quality & SOLID Principles
 
 Refer to `TODO.md` for comprehensive guidelines on SOLID principles, clean code improvements, and refactoring priorities. This document outlines:

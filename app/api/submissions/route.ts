@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getAnalyticsDB, type SubmissionChannel } from "@/lib/services/AnalyticsDB";
+import { getAnalyticsStore } from "@/lib/services/analytics";
+import type { SubmissionChannel } from "@/lib/services/AnalyticsDB";
 import type { ItemCounts } from "@/lib/types/laundry";
 
 export const runtime = "nodejs";
@@ -45,8 +46,8 @@ export async function POST(req: Request) {
       );
     }
     
-    const db = getAnalyticsDB();
-    const submissionId = db.recordSubmission(body.counts, {
+    const store = getAnalyticsStore();
+    const submissionId = await store.recordSubmission(body.counts, {
       channel: body.channel,
       customerReference: body.customerReference,
       channelSuccess: body.channelSuccess ?? true,
@@ -76,24 +77,24 @@ export async function GET(req: Request) {
     const limit = parseInt(searchParams.get('limit') || '10', 10);
     const channel = searchParams.get('channel') as SubmissionChannel | null;
     
-    const db = getAnalyticsDB();
-    
+    const store = getAnalyticsStore();
+
     if (type === 'summary') {
-      const summary = db.getSummary();
+      const summary = await store.getSummary();
       return NextResponse.json(summary);
     }
-    
+
     if (type === 'channel-stats') {
-      const stats = db.getChannelStats();
+      const stats = await store.getChannelStats();
       return NextResponse.json(stats);
     }
-    
+
     if (channel) {
-      const submissions = db.getSubmissionsByChannel(channel, limit);
+      const submissions = await store.getSubmissionsByChannel(channel, limit);
       return NextResponse.json(submissions);
     }
-    
-    const submissions = db.getRecentSubmissions(limit);
+
+    const submissions = await store.getRecentSubmissions(limit);
     return NextResponse.json(submissions);
   } catch (error) {
     console.error("Failed to fetch submissions:", error);

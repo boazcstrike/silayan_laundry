@@ -131,3 +131,483 @@
     appearance: textfield;
   }
 }
+
+/* ===========================================================================
+   Analytics dashboard styles
+   Self-contained; built on the shadcn design tokens already defined above
+   (card / muted / border / foreground / primary / chart-*). Adapts to dark
+   mode automatically via those tokens.
+   =========================================================================== */
+
+.dashboard-shell {
+  width: 100%;
+}
+
+.dashboard-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.25rem;
+  max-width: 80rem;
+  margin: 0 auto;
+}
+
+.dashboard-stack {
+  min-height: 100%;
+}
+
+.muted {
+  color: var(--muted-foreground);
+  font-size: 0.85rem;
+}
+
+.meta-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+.icon-inline {
+  display: inline-block;
+  vertical-align: -0.15em;
+  margin-right: 0.35rem;
+}
+
+/* Cards ------------------------------------------------------------------- */
+.card,
+.dashboard-card {
+  background: var(--card);
+  color: var(--card-foreground);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.1rem 1.2rem;
+}
+
+.dashboard-card-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  background: linear-gradient(
+    135deg,
+    color-mix(in oklch, var(--primary) 12%, var(--card)),
+    var(--card)
+  );
+}
+
+.dashboard-kicker {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+.dashboard-card-hero h1 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.dashboard-card-header {
+  margin-bottom: 0.85rem;
+}
+
+.dashboard-card-header h2 {
+  font-size: 1rem;
+  font-weight: 650;
+  display: flex;
+  align-items: center;
+}
+
+.dashboard-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.dashboard-card-body h3 {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+/* Overview / grids -------------------------------------------------------- */
+.laundry-overview-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+}
+
+@media (min-width: 900px) {
+  .laundry-overview-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+    align-items: start;
+  }
+}
+
+.dashboard-grid,
+.laundry-current-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+}
+
+.dual-col {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+}
+
+@media (min-width: 720px) {
+  .dual-col {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.list-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.compact-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+}
+
+.compact-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+/* Forecast highlight ------------------------------------------------------ */
+.forecast-highlight {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  overflow: hidden;
+  padding: 0.9rem 1rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid color-mix(in oklch, var(--primary) 30%, var(--border));
+  background: color-mix(in oklch, var(--primary) 10%, var(--card));
+}
+
+.forecast-highlight-overdue {
+  border-color: color-mix(in oklch, var(--destructive) 45%, var(--border));
+  background: color-mix(in oklch, var(--destructive) 12%, var(--card));
+}
+
+.forecast-highlight-soon {
+  border-color: color-mix(in oklch, var(--chart-5) 45%, var(--border));
+  background: color-mix(in oklch, var(--chart-5) 12%, var(--card));
+}
+
+.forecast-highlight-idle {
+  border-color: var(--border);
+  background: var(--muted);
+}
+
+.forecast-highlight-sheen {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    120deg,
+    transparent 40%,
+    color-mix(in oklch, var(--foreground) 6%, transparent) 50%,
+    transparent 60%
+  );
+  pointer-events: none;
+}
+
+.forecast-highlight-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--primary) 18%, var(--card));
+  color: var(--foreground);
+  flex-shrink: 0;
+}
+
+.forecast-highlight-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.forecast-highlight-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+.forecast-highlight-date {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.forecast-highlight-countdown {
+  font-size: 0.8rem;
+  color: var(--muted-foreground);
+}
+
+/* Success meter ----------------------------------------------------------- */
+.success-meter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.success-meter-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.success-meter-track {
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--muted);
+  overflow: hidden;
+}
+
+.success-meter-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--primary);
+  transition: width 0.4s ease;
+}
+
+/* Tabs -------------------------------------------------------------------- */
+.laundry-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.laundry-tabs-list {
+  align-self: flex-start;
+}
+
+/* Forecast body ----------------------------------------------------------- */
+.forecast-body {
+  gap: 1.25rem;
+}
+
+.forecast-hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.forecast-next {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.forecast-date {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.forecast-overdue {
+  color: var(--destructive);
+}
+
+.forecast-countdown {
+  font-size: 0.85rem;
+  color: var(--muted-foreground);
+}
+
+.forecast-range {
+  font-size: 0.8rem;
+  color: var(--muted-foreground);
+}
+
+.forecast-pills {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.forecast-pill {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.45rem 0.7rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--muted);
+  min-width: 4.5rem;
+}
+
+.forecast-pill strong {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.forecast-chart-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.forecast-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.forecast-section-head h3 {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.forecast-caption {
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+}
+
+.forecast-headline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.forecast-upcoming,
+.forecast-monthly {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.forecast-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.forecast-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--card);
+  min-width: 4rem;
+}
+
+.forecast-chip-weekday {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted-foreground);
+}
+
+.forecast-chip-day {
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+.forecast-chip-spread {
+  font-size: 0.7rem;
+  color: var(--muted-foreground);
+}
+
+.forecast-month-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+}
+
+.forecast-month-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.forecast-formula-trigger {
+  align-self: flex-start;
+}
+
+/* Last-7-days bars -------------------------------------------------------- */
+.bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.4rem;
+  min-height: 120px;
+}
+
+.bar-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  flex: 1;
+}
+
+.bar {
+  width: 100%;
+  max-width: 1.6rem;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  background: var(--chart-1);
+}
+
+.bar-wrap span {
+  font-size: 0.65rem;
+  color: var(--muted-foreground);
+}
+
+.bar-wrap strong {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* Motion ------------------------------------------------------------------ */
+@keyframes dashboard-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-up {
+  animation: dashboard-fade-up 0.4s ease both;
+}
+
+.fade-up.delay-2 {
+  animation-delay: 0.12s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-up {
+    animation: none;
+  }
+}

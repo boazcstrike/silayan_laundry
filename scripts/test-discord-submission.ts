@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-require-imports */
 /**
  * Integration Test: Discord Submission with Randomized Item Counts
  * 
