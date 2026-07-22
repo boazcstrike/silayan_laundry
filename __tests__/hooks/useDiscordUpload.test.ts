@@ -74,9 +74,11 @@ describe('useDiscordUpload', () => {
         method: 'POST',
         body: expect.any(FormData),
       });
-      
-      // Check FormData construction
-      const formData = mockFetch.mock.calls[0][1].body;
+
+      // The hook also does a mount-time GET /api/discord config check, so find
+      // the POST upload call specifically rather than assuming call index 0.
+      const postCall = mockFetch.mock.calls.find((call) => call[1]?.method === 'POST');
+      const formData = postCall![1].body;
       expect(formData.get('file')).toBeInstanceOf(File);
       expect(formData.get('file').name).toBe(filename);
       expect(formData.get('file').options.type).toBe('image/png');
@@ -94,9 +96,10 @@ describe('useDiscordUpload', () => {
       });
       
       expect(success).toBe(true);
-      
-      // Check FormData contains custom message
-      const formData = mockFetch.mock.calls[0][1].body;
+
+      // Check FormData contains custom message (POST call, not the mount GET)
+      const postCall = mockFetch.mock.calls.find((call) => call[1]?.method === 'POST');
+      const formData = postCall![1].body;
       expect(formData.get('message')).toBe(customMessage);
     });
 

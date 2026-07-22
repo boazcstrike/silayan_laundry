@@ -20,6 +20,9 @@ beforeAll(() => {
 
 beforeEach(() => {
   mockConfirm.mockReset();
+  // The hook persists to localStorage and restores on mount; clear it so state
+  // does not leak between tests.
+  localStorage.clear();
 });
 
 describe('useLaundryItems', () => {
