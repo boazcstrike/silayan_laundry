@@ -9,7 +9,7 @@
  * wash load, and the full Download / Send to Discord / Reset actions are wired.
  */
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { Plus } from "lucide-react";
 import {
@@ -33,6 +33,13 @@ import { ActionBar } from "./ActionBar";
 import type { DrumUnit, Selected } from "./types";
 
 const LOAD = 15;
+// When a load fills to 100% the drum shakes for this long before it empties.
+const WASH_MS = 1900;
+// Ignore the loadsDone jump that hydration causes on mount (restored counts)
+// so the page never opens mid-wash.
+const WASH_ARM_DELAY_MS = 500;
+
+const EMPTY_UNITS: DrumUnit[] = [];
 
 type CategoryItem = { name: string; x: number; y: number; group?: string };
 
@@ -69,6 +76,11 @@ export default function TumbleFull({ categories }: TumbleFullProps) {
   const { recordSubmission } = useSubmission();
 
   const [spinCount, setSpinCount] = useState(0);
+  const [isWashing, setIsWashing] = useState(false);
+  // Total at which the last full-load wash finished. While the count still
+  // rests exactly on that boundary the drum shows freshly emptied — the
+  // "reset the count inside the machine" moment.
+  const [washedBoundary, setWashedBoundary] = useState(-1);
   const [actionError, setActionError] = useState<string | null>(null);
   const [customName, setCustomName] = useState("");
   // Machine style preview — swap A/B/C live until the client picks one.
@@ -106,6 +118,49 @@ export default function TumbleFull({ categories }: TumbleFullProps) {
   const cycleTotal = total > 0 && cycle === 0 ? LOAD : cycle;
   const fill = cycleTotal / LOAD;
 
+  // --- full-load wash ceremony: shake the drum + contents, then empty it -----
+  const loadsRef = useRef(loadsDone);
+  loadsRef.current = loadsDone;
+  const prevLoadsRef = useRef(loadsDone);
+  const washArmed = useRef(false);
+  const washTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Arm detection only after mount so restoring saved counts (which can jump
+  // loadsDone from 0 to N during hydration) does not fire a phantom wash.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      prevLoadsRef.current = loadsRef.current;
+      washArmed.current = true;
+    }, WASH_ARM_DELAY_MS);
+    return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    if (!washArmed.current) return;
+    if (loadsDone > prevLoadsRef.current) {
+      setIsWashing(true);
+      if (washTimer.current) clearTimeout(washTimer.current);
+      washTimer.current = setTimeout(() => {
+        setIsWashing(false);
+        setWashedBoundary(loadsRef.current * LOAD);
+      }, WASH_MS);
+    }
+    prevLoadsRef.current = loadsDone;
+  }, [loadsDone]);
+
+  useEffect(
+    () => () => {
+      if (washTimer.current) clearTimeout(washTimer.current);
+    },
+    [],
+  );
+
+  // After the wash, hold the drum empty while the count still rests on the
+  // completed boundary (e.g. exactly 15). Counting one more item moves total
+  // off the boundary and the next load starts filling normally.
+  const drumReset =
+    !isWashing && total > 0 && total % LOAD === 0 && washedBoundary === total;
+
   // --- selected items (count > 0) across regular + custom ---
   const selected = useMemo<Selected[]>(() => {
     const out: Selected[] = [];
@@ -128,6 +183,10 @@ export default function TumbleFull({ categories }: TumbleFullProps) {
     }
     return flat.slice(0, Math.min(cycleTotal, LOAD));
   }, [selected, cycleTotal]);
+
+  // Drum + gauge read empty during the post-wash reset hold.
+  const drumUnits = drumReset ? EMPTY_UNITS : units;
+  const drumFill = drumReset ? 0 : fill;
 
   // --- event-driven spin (NOT an effect watching total) ---
   const bumpSpin = useCallback(() => setSpinCount((count) => count + 1), []);
@@ -247,7 +306,7 @@ export default function TumbleFull({ categories }: TumbleFullProps) {
         className="mb-4"
       >
         <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
-          Tumble · Full Deck
+          Bo&apos;s Laundry App
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Count your laundry — icons tumble in the drum and every selected item
@@ -285,22 +344,23 @@ export default function TumbleFull({ categories }: TumbleFullProps) {
           <div className="w-full max-w-[17rem] shrink-0 self-center">
             <WashingMachine
               variant={machine}
-              units={units}
-              fill={fill}
+              units={drumUnits}
+              fill={drumFill}
               spinCount={spinCount}
               total={total}
               loadsDone={loadsDone}
               pileStyle={pile}
+              isWashing={isWashing}
             />
           </div>
-          <div className="flex w-full flex-col justify-between gap-3">
-            <Mascot total={total} fill={fill} />
-            <LoadGauge fill={fill} loadsDone={loadsDone} batchesNeeded={batchesNeeded} />
+          <div className="flex w-full flex-col gap-3">
+            <Mascot total={total} fill={drumFill} />
+            {/* Selected items ride in the empty middle, between mascot + gauge. */}
+            <div className="min-h-0 flex-1 overflow-y-auto sm:max-h-[10rem]">
+              <IconStrip selected={selected} onInc={handleInc} onDec={handleDec} />
+            </div>
+            <LoadGauge fill={drumFill} loadsDone={loadsDone} batchesNeeded={batchesNeeded} />
           </div>
-        </div>
-
-        <div className="mt-4">
-          <IconStrip selected={selected} onInc={handleInc} onDec={handleDec} />
         </div>
       </div>
 

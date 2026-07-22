@@ -32,6 +32,34 @@ interface DrumProps {
   total: number;
   loadsDone: number;
   pileStyle: PileStyle;
+  isWashing: boolean;
+}
+
+/** Rising soap bubbles shown only while a full load is washing. */
+const SUDS: ReadonlyArray<{ left: number; size: number; delay: number }> = [
+  { left: 22, size: 9, delay: 0 },
+  { left: 40, size: 6, delay: 0.35 },
+  { left: 55, size: 11, delay: 0.15 },
+  { left: 70, size: 7, delay: 0.5 },
+  { left: 34, size: 5, delay: 0.7 },
+  { left: 64, size: 8, delay: 0.9 },
+];
+
+function Suds() {
+  return (
+    <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+      {SUDS.map((b, i) => (
+        <motion.span
+          key={i}
+          className="absolute rounded-full bg-white/70 shadow-sm"
+          style={{ left: `${b.left}%`, bottom: "12%", width: b.size, height: b.size }}
+          initial={{ y: 0, opacity: 0, scale: 0.6 }}
+          animate={{ y: [-4, -78], opacity: [0, 0.9, 0], scale: [0.6, 1, 0.8] }}
+          transition={{ duration: 1.6, delay: b.delay, repeat: Infinity, ease: "easeOut" }}
+        />
+      ))}
+    </div>
+  );
 }
 
 /**
@@ -42,15 +70,25 @@ interface DrumProps {
  * - "water": the original solid fill that rises on the Y axis while the load's
  *   glyphs tumble on a rotating layer — kept as a comparison option.
  */
-export function Drum({ units, fill, spinCount, total, loadsDone, pileStyle }: DrumProps) {
+export function Drum({ units, fill, spinCount, total, loadsDone, pileStyle, isWashing }: DrumProps) {
   const reduce = useReducedMotion();
   const isWater = pileStyle === "water";
+  const shake = isWashing && !reduce;
 
   return (
     <div
       className="relative aspect-square w-full max-w-[16rem] overflow-hidden rounded-full border-4 bg-[#eef3f1] shadow-inner dark:bg-[#dfe7e3]"
       style={{ borderColor: "color-mix(in oklch, var(--chart-2) 55%, #9aa8a3)" }}
     >
+      <motion.div
+        className="absolute inset-0"
+        animate={
+          shake
+            ? { x: [0, -6, 6, -5, 5, -3, 3, 0], rotate: [0, -2, 2, -2, 2, -1, 1, 0] }
+            : { x: 0, rotate: 0 }
+        }
+        transition={shake ? { duration: 0.55, repeat: Infinity, ease: "easeInOut" } : { duration: 0.3 }}
+      >
       {isWater ? (
         <>
           {/* Water fill — bottom layer, scales up on the Y axis with fill. */}
@@ -91,6 +129,28 @@ export function Drum({ units, fill, spinCount, total, loadsDone, pileStyle }: Dr
       ) : (
         <DrumPile style={pileStyle} units={units} fill={fill} />
       )}
+      </motion.div>
+
+      {/* Wash ceremony: suds + a pulsing rim glow while a full load runs. */}
+      <AnimatePresence>
+        {isWashing ? (
+          <motion.div
+            key="wash-fx"
+            className="pointer-events-none absolute inset-0"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <Suds />
+            <motion.div
+              className="absolute inset-0 rounded-full"
+              style={{ boxShadow: "inset 0 0 0 3px color-mix(in oklch, var(--chart-2) 60%, transparent)" }}
+              animate={reduce ? { opacity: 0.6 } : { opacity: [0.25, 0.7, 0.25] }}
+              transition={reduce ? { duration: 0 } : { duration: 0.9, repeat: Infinity }}
+            />
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
       {/* Readout — pinned to the upper drum so a rising pile never hides it. */}
       <div className="pointer-events-none absolute inset-x-0 top-[14%] grid place-items-center">

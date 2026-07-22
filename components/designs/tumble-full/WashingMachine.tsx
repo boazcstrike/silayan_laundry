@@ -9,6 +9,7 @@
  * keeps its existing spin/fill and everything else here is static.
  */
 
+import { motion, useReducedMotion } from "motion/react";
 import { Drum } from "./Drum";
 import type { PileStyle } from "./PileStyles";
 import type { DrumUnit } from "./types";
@@ -71,6 +72,7 @@ interface WashingMachineProps {
   total: number;
   loadsDone: number;
   pileStyle: PileStyle;
+  isWashing: boolean;
 }
 
 export function WashingMachine({
@@ -81,12 +83,19 @@ export function WashingMachine({
   total,
   loadsDone,
   pileStyle,
+  isWashing,
 }: WashingMachineProps) {
   const c = CHROME[variant];
+  const reduce = useReducedMotion();
+  const shake = isWashing && !reduce;
 
   return (
     <div className="mx-auto w-full max-w-[17rem]">
-      <div className={`relative rounded-[1.9rem] border-2 p-3 pb-6 shadow-lg ${c.body}`}>
+      <motion.div
+        className={`relative rounded-[1.9rem] border-2 p-3 pb-6 shadow-lg ${c.body}`}
+        animate={shake ? { x: [0, -1.5, 1.5, -1.5, 1.5, 0], y: [0, 1, -1, 1, -1, 0] } : { x: 0, y: 0 }}
+        transition={shake ? { duration: 0.35, repeat: Infinity, ease: "easeInOut" } : { duration: 0.2 }}
+      >
         {/* Control panel: detergent drawer · LED loads readout · program knob */}
         <div className="mb-3 flex items-center gap-2">
           <div className={`flex h-8 flex-1 items-center rounded-lg border px-2 ${c.panel}`}>
@@ -95,15 +104,31 @@ export function WashingMachine({
           {/* LED loads counter — labelled so the number reads as "loads done". */}
           <div
             className={`flex h-8 w-16 flex-col items-center justify-center rounded-md font-mono leading-none ${c.display}`}
-            aria-label={`${loadsDone} wash load${loadsDone === 1 ? "" : "s"} counted so far`}
+            aria-label={
+              isWashing
+                ? "Washing full load"
+                : `${loadsDone} wash load${loadsDone === 1 ? "" : "s"} counted so far`
+            }
           >
-            <span className="flex items-baseline gap-0.5">
-              <span className="text-sm font-bold tabular-nums">{loadsDone}</span>
-              <span className="text-[0.5rem] font-semibold opacity-80">LOADS</span>
-            </span>
-            <span className="mt-0.5 text-[0.4rem] font-semibold tracking-[0.15em] opacity-60">
-              EST · DONE
-            </span>
+            {isWashing ? (
+              <motion.span
+                className="text-[0.65rem] font-bold tracking-[0.25em]"
+                animate={reduce ? undefined : { opacity: [1, 0.3, 1] }}
+                transition={reduce ? undefined : { duration: 0.7, repeat: Infinity }}
+              >
+                WASH
+              </motion.span>
+            ) : (
+              <>
+                <span className="flex items-baseline gap-0.5">
+                  <span className="text-sm font-bold tabular-nums">{loadsDone}</span>
+                  <span className="text-[0.5rem] font-semibold opacity-80">LOADS</span>
+                </span>
+                <span className="mt-0.5 text-[0.4rem] font-semibold tracking-[0.15em] opacity-60">
+                  EST · DONE
+                </span>
+              </>
+            )}
           </div>
           <div
             className={`relative grid size-8 place-items-center rounded-full border ${c.body}`}
@@ -132,6 +157,7 @@ export function WashingMachine({
             total={total}
             loadsDone={loadsDone}
             pileStyle={pileStyle}
+            isWashing={isWashing}
           />
 
           {/* handle — the grip you pull to open the door */}
@@ -150,7 +176,7 @@ export function WashingMachine({
         {/* Feet */}
         <span className={`absolute -bottom-2 left-7 h-3 w-7 rounded-b-md ${c.feet}`} aria-hidden="true" />
         <span className={`absolute -bottom-2 right-7 h-3 w-7 rounded-b-md ${c.feet}`} aria-hidden="true" />
-      </div>
+      </motion.div>
     </div>
   );
 }
