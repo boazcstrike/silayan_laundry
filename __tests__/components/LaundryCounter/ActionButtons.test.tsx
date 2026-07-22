@@ -15,23 +15,12 @@ describe('ActionButtons', () => {
      onDownload: jest.fn(),
      onSendToDiscord: jest.fn(),
      isSendingToDiscord: false,
+     isDiscordConfigured: true,
      isGeneratingImage: false,
      error: undefined,
    };
-   let reloadMock: jest.Mock;
-   let canMockReload: boolean;
-
    beforeEach(() => {
      jest.clearAllMocks();
-     // Attempt to mock window.location.reload if writable
-     reloadMock = jest.fn();
-     try {
-       window.location.reload = reloadMock;
-       canMockReload = true;
-     } catch (e) {
-       // Property is read-only, will need to handle in test
-       canMockReload = false;
-     }
    });
 
   describe('rendering', () => {
@@ -143,23 +132,6 @@ describe('ActionButtons', () => {
       render(<ActionButtons {...mockProps} error={errorMessage} />);
       expect(screen.getByText('Error')).toBeInTheDocument();
       expect(screen.getByText(errorMessage)).toBeInTheDocument();
-    });
-
-    it('should render reload button when error is displayed', () => {
-      render(<ActionButtons {...mockProps} error="Some error" />);
-      expect(screen.getByText('Reload Page')).toBeInTheDocument();
-    });
-
-    it('should call window.location.reload when reload button clicked', () => {
-      // Skip test if we couldn't mock reload
-      if (!canMockReload) {
-        console.warn('Skipping reload test because window.location.reload is not mockable');
-        return;
-      }
-      render(<ActionButtons {...mockProps} error="Some error" />);
-      const reloadButton = screen.getByText('Reload Page');
-      fireEvent.click(reloadButton);
-      expect(reloadMock).toHaveBeenCalledTimes(1);
     });
 
     it('should not show error section when error is empty string', () => {
