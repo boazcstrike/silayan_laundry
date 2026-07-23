@@ -144,6 +144,27 @@ Add comprehensive testing for new hooks and components, implement polish feature
   [`docs/deploy-cloudflare.md`](./docs/deploy-cloudflare.md). **Action:** revoke the
   compromised research token first.
 
+## Backlog — Performance
+Baseline: production build total client JS **1703 KB** (min, pre-gzip) after the
+recharts dedup (commit `ff29ebf`: 2158 → 1703 KB, −21%; `/analytics` −~400 KB).
+
+- **`motion` on home (~133 KB chunk)** — powers the signature drum animation across
+  ~9 `components/designs/tumble-full/*` + `washer-drafts/Draft6`. Migrate to
+  `LazyMotion` + the `m` component with the `domAnimation` feature bundle to roughly
+  halve motion's runtime. Invasive (touches every `motion/react` importer) and risks
+  the core animation — verify the drum + wash ceremony after. Medium effort / medium risk.
+- **Home first-load ~949 KB** — inherent: the whole counter is `"use client"` (interactive)
+  + react-dom (~219 KB) + motion. A Server-Component split is high-risk / low-value for a
+  single-user app; only worth it if home LCP becomes a real complaint.
+- **`optimizePackageImports`** in `next.config.ts` for `recharts` / `@base-ui/react` —
+  marginal after the dedup. Try + measure; keep only if a chunk actually shrinks.
+- **SEO / metadata** — `app/layout.tsx` `metadata` has title + description only. Add
+  `metadataBase` + OpenGraph/Twitter cards. Additive, safe, low effort.
+- **Pre-existing `tsc --noEmit` errors** — `ProcessEnv` requires `NODE_ENV` in 3 test files
+  (`__tests__/services/backup/SqliteBackupService.test.ts`,
+  `__tests__/services/analytics/{DualAnalyticsStore,reconcile}.test.ts`). Jest + `next build`
+  pass; standalone `tsc` fails. Cast env stubs or add `NODE_ENV`. Cheap.
+
 ## Notes for Agents
 When working on this codebase:
 1. **Always check `AGENTS.md` first** for collaboration guidelines
