@@ -19,23 +19,26 @@ import {
   EASE_EMPHASIZED,
 } from "@/components/analytics/motion";
 
+// All three charts load from ONE module specifier (lazyCharts) so recharts is
+// bundled into a single shared async chunk instead of being duplicated per
+// dynamic import. See components/analytics/lazyCharts.ts.
 const CategoryAverageChart = dynamic(
   () =>
-    import("@/components/analytics/CategoryAverageChart").then(
+    import("@/components/analytics/lazyCharts").then(
       (mod) => mod.CategoryAverageChart,
     ),
   { ssr: false, loading: () => <div style={{ minHeight: 220 }} aria-hidden /> },
 );
 const CurrentLoadChart = dynamic(
   () =>
-    import("@/components/analytics/CurrentLoadChart").then(
+    import("@/components/analytics/lazyCharts").then(
       (mod) => mod.CurrentLoadChart,
     ),
   { ssr: false, loading: () => <div style={{ minHeight: 260 }} aria-hidden /> },
 );
 const LaundryForecastPanel = dynamic(
   () =>
-    import("@/components/analytics/LaundryForecastPanel").then(
+    import("@/components/analytics/lazyCharts").then(
       (mod) => mod.LaundryForecastPanel,
     ),
   { ssr: false, loading: () => <div style={{ minHeight: 220 }} aria-hidden /> },
