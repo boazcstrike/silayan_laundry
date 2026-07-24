@@ -15,9 +15,12 @@ import type {
   CategoryAverage,
   CategoryTimelineRow,
   DailyCount,
+  DateRange,
   FullSubmission,
   SubmissionChannel,
 } from '@/lib/services/AnalyticsDB';
+
+export type { DateRange } from '@/lib/services/AnalyticsDB';
 
 /** Options accepted when recording a submission. */
 export interface RecordSubmissionOptions {
@@ -41,14 +44,26 @@ export interface AnalyticsStore {
    */
   recordSubmission(counts: ItemCounts, options: RecordSubmissionOptions): Promise<number>;
 
+  /**
+   * Optional de-duplication hook. Returns the id of a recent successful
+   * submission with identical non-zero counts on the same channel (a re-send of
+   * the same batch), or null if none. Only the canonical local store (SQLite)
+   * implements this; the dual-write path uses it to skip recording duplicates.
+   */
+  findRecentDuplicate?(
+    counts: ItemCounts,
+    options: RecordSubmissionOptions,
+    withinMinutes: number,
+  ): Promise<number | null>;
+
   getSubmission(id: number): Promise<FullSubmission | null>;
-  getRecentSubmissions(limit?: number): Promise<FullSubmission[]>;
-  getSummary(): Promise<AnalyticsSummary>;
+  getRecentSubmissions(limit?: number, offset?: number): Promise<FullSubmission[]>;
+  getSummary(range?: DateRange): Promise<AnalyticsSummary>;
   getSubmissionsByDateRange(startDate: string, endDate: string): Promise<FullSubmission[]>;
   getSubmissionsByChannel(channel: SubmissionChannel, limit?: number): Promise<FullSubmission[]>;
   getChannelStats(): Promise<ChannelStat[]>;
-  getCategoryAverages(limit?: number): Promise<CategoryAverage[]>;
-  getCategoryTimeline(): Promise<CategoryTimelineRow[]>;
-  getDailyCounts(limit?: number): Promise<DailyCount[]>;
-  getLaundryDays(): Promise<string[]>;
+  getCategoryAverages(limit?: number, range?: DateRange): Promise<CategoryAverage[]>;
+  getCategoryTimeline(range?: DateRange): Promise<CategoryTimelineRow[]>;
+  getDailyCounts(limit?: number, range?: DateRange): Promise<DailyCount[]>;
+  getLaundryDays(range?: DateRange): Promise<string[]>;
 }

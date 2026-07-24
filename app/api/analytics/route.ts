@@ -6,26 +6,34 @@ import {
   projectLaundryDays,
 } from "@/lib/laundryForecast";
 import { forecastCategoryLoads } from "@/lib/laundryLoadForecast";
+import { normalizeRangeKey, resolveRange } from "@/lib/analyticsRange";
 
 export const runtime = "nodejs";
 
 /**
- * GET /api/analytics
+ * GET /api/analytics?range=all|1m|2m|6m|year
  *
  * Assembles the laundry analytics dashboard payload from the local SQLite
- * database and runs the cadence + per-category load forecasts. Native
+ * database and runs the cadence + per-category load forecasts. The optional
+ * `range` quick-filter scopes every read (summary, charts, forecast) to an
+ * inclusive local-day window; omit or pass `all` for the full history. Native
  * `better-sqlite3` access via {@link AnalyticsDB} — no remote DB client.
  */
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const store = getAnalyticsStore();
 
+    const rangeKey = normalizeRangeKey(
+      new URL(request.url).searchParams.get("range"),
+    );
+    const range = resolveRange(rangeKey);
+
     const [summary, categoryAverages, categoryTimeline, daily, laundryDays] = await Promise.all([
-      store.getSummary(),
-      store.getCategoryAverages(),
-      store.getCategoryTimeline(),
-      store.getDailyCounts(7),
-      store.getLaundryDays(),
+      store.getSummary(range),
+      store.getCategoryAverages(undefined, range),
+      store.getCategoryTimeline(range),
+      store.getDailyCounts(7, range),
+      store.getLaundryDays(range),
     ]);
 
     const forecast = forecastNextLaundry(laundryDays);

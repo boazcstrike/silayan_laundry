@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChartColumn, Shirt, WashingMachine } from "lucide-react";
+import { ChartColumn, History, PencilRuler, Shirt, WashingMachine } from "lucide-react";
 
 import {
   Sidebar,
@@ -17,10 +17,13 @@ import {
 } from "@/components/ui/sidebar";
 
 // The Tumble Deck "Full Deck" design is now the counter itself (see app/page).
-// The standalone "Proposed designs" section is retired.
+// "Proposed Designs" hosts every design proposal awaiting a decision — new
+// proposals land there as tabs and old ones stay for future reference.
 const NAV_ITEMS = [
   { href: "/", icon: Shirt, label: "Counter" },
   { href: "/analytics", icon: ChartColumn, label: "Analytics" },
+  { href: "/history", icon: History, label: "History" },
+  { href: "/proposed-designs", icon: PencilRuler, label: "Proposed Designs" },
 ] as const;
 
 export function AppSidebar() {

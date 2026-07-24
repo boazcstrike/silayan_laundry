@@ -4,6 +4,7 @@
  */
 
 export { useLaundryItems } from './useLaundryItems';
+export { usePrefillCounts } from './usePrefillCounts';
 export { useImageGeneration } from './useImageGeneration';
 export { useDiscordUpload } from './useDiscordUpload';
 export { useSubmission } from './useSubmission';

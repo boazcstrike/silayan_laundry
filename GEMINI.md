@@ -15,18 +15,22 @@ submission is recorded for the **analytics dashboard** (`/analytics`).
 app/
   page.tsx                     # counter (LaundryCounter)
   analytics/page.tsx           # analytics dashboard (reads /api/analytics)
+  history/page.tsx             # submission history (paginated, with prefill forecast)
   api/
-    submissions/route.ts       # POST record + GET summary/recent/channel-stats
+    submissions/route.ts       # POST record + GET summary/recent/channel-stats + history with pagination
     analytics/route.ts         # GET assembled dashboard payload + forecasts
     discord/route.ts           # proxy image upload to Discord webhook
 components/
   LaundryCounter/              # counter UI (extracted, focused components)
-  AppShell / AppSidebar        # navigation shell
+  history/                     # submission history list + ForecastPrefillCard
+  AppShell / AppSidebar        # navigation shell (includes /history link)
   ui/                          # shadcn-style primitives (Base UI + Radix)
 hooks/                         # useSubmission, useLaundryItems, useImageGeneration, useDiscordUpload
+  usePrefillCounts.ts          # mount-only: parse & apply prefill param, strip URL after
 lib/
   services/AnalyticsDB.ts      # SQLite (better-sqlite3) — original data class
   services/analytics/          # store abstraction + MongoDB dual-write  ← see docs/data-layer.md
+  prefill.ts                   # encode/decode base64url prefill params; split known/custom
   laundryForecast.ts           # EWMA cadence forecast
   laundryLoadForecast.ts       # per-category load forecast
   types/                       # shared TypeScript interfaces

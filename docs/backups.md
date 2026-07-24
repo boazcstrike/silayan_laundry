@@ -13,7 +13,8 @@ server takes a **snapshot on every start** and keeps a rolling set of restore po
 ## How it works
 
 - **Trigger:** `instrumentation.ts` `register()` runs once per server boot (guarded to the
-  Node.js runtime) and calls `runStartupBackup()`.
+  Node.js runtime) and calls `runStartupBackup()`. The same hook then runs `runStartupReconcile()`
+  to mirror any SQLite rows Mongo is missing — see [`data-layer.md`](./data-layer.md).
 - **Mechanism:** better-sqlite3's online `db.backup()` — a WAL-consistent snapshot, **not** a
   raw file copy (a raw copy can capture a torn WAL and corrupt the snapshot).
 - **Location:** `data/backups/analytics-<timestamp>.db` (UTC, filesystem-safe, sortable).

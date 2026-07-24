@@ -1,0 +1,21 @@
+/**
+ * Static baked assets for Draft 4 "Skeuomorph Glass".
+ *
+ * - WAVE_PATH / WAVE_PATH_DENSE: sine tiles for the parallax water waves.
+ *   Both layers ride ONE shared x-transform; the dense tile packs 12 periods
+ *   into the same box (vs 8 over viewBox 200) so the identical translation
+ *   reads ~1.6x faster on it. 6 whole dense wavelengths per -50% loop keep
+ *   the wrap seamless.
+ * - GRAIN_URI: 64x64 tiled grayscale-noise PNG (generated offline, seeded)
+ *   used as the enamel micro-grain at opacity .04 — identical speckle to the
+ *   old feTurbulence filter without a per-machine raster.
+ */
+
+export const WAVE_PATH =
+  "M0 10 Q12.5 2 25 10 T50 10 T75 10 T100 10 T125 10 T150 10 T175 10 T200 10 V22 H0 Z";
+
+export const WAVE_PATH_DENSE =
+  "M0 10 Q12.5 2 25 10 T50 10 T75 10 T100 10 T125 10 T150 10 T175 10 T200 10 T225 10 T250 10 T275 10 T300 10 V22 H0 Z";
+
+export const GRAIN_URI =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAAAAACPAi4CAAAHH0lEQVR42i2YyREbQQwDEQyDYTAIBsEwGAbDh6pnVX7YkvbggWusVsqy9tazUd1dKn1baym748zMWeXarKvVfVeb7jqJG1tRZVw1t7OuypzH4rnl9l512pp2Z5Kyr+5yUid3s50R1yk9455o5yZ3WSU1OnciR6Xu+CY9fRfNpKu4ebbfrTu9t1fJ0FpxsZyr2lvV7q7mktv1lpyit6nSnim6zcPrVlvdt9b6NJruHW3VlG+dKWVO5UvfzVzXRhpmsFVO13ua19lOpdznvWz7G3PX0PPUum+nUyU+zEgZLuut6+7dnpYuPm/ZdX0daetm5FKvS0lrdXPvbTMuptvinWkab4+bt7lznQ7dj67m4nhTeZ3WXG1d1fCu6rnr5WGO3Ksd0aSTun2f497m0iSrLifj2MNS4mMJNd3Vctel57Jmy5TBFnrol3Xm3tfVCwZqtR3wVPLlwhcDfuJmhlfDnEPhWVO+S+x7BzAU8N1r6+68bqAIPJjSTq2mT60rA+nqiG7FwOs82m0NaB1wAREKbC102cQ2NGJKKUZjIDR9JX29n3Jt57anxDKYjLkWFL7+rXaci1dFeZ6OqoGee3OrmDIBoJliT/dlx6D8znI1qMoM8DxfBe6tpsp7nV1mu9f9iMy82g1y9lylm9LAjWQWQtPOhZ/Frhp0KTxw2bDHwH6AdavfDNaOm0FPGzit8j5lbaYJVbRAf1vp7qhrT0oiqGS3NHWDKGQ0vInNLH+5aim7qveRCP48DnqzepziJl7a8NnAbmq2j+nDrlbV1q6tQ97iqd3aYVNuhIrC54HLdTBX93RvlBt2qgd1KE85QzUo2Qq6MqywpgjoNsPp9lxrprwu61AKZ9xXTKEZth2Nx7wJgYWhsynoPkjJLfyu1plB7QTya3v2aeF4wSsdTtCKN3DGu8UKzhOpIMl2F2Md2p8a1bvI4Dx6T321+mTkEcHoZmDUxKXvCpaUHWrSKy9culDoRpepA1Vzs/LIAU13hf5XI73o6al3fDMoMUAKEo1vLEtq6KOnLLUo1kzms531hHko0xWB6GkZoX8DGrRs9SRbhSFUb6venzwmpI7hFcvtNmzQUtItWEXoH6w9JTc+Qe8QUFjegS4vuDpIBFSiXa1dzj3AzVOGuoyeSTyuqWtg6tyftl3P9dwIkdU3h29orcIIgXAFovbMCh+YBVn27SI5hbynYoa+B+/OTzWpMs8rwERXBaTWs+j3u7DGmnst2YvwfMQBSOnZOYepv204h8PlQbLRQSZuPZC/XSq4dW+FMIHiYvn8OhJy3gc9jdbW5t38mPZZ0Bwq/iY3psHDqEyD1A3U8OfhTVN6TnkKACm2V4vYalw+pAjyUlg+BTlWhGAxoC4WSkAAR4SDp30IkUaLmuLl7JQQMWGxNa5+0GGBPFr1+AfM+4GyhcdSlAfGd3UAPO8Kkcn16ODZEZljpi72gYUGQOp9GoSOIV70u29+NXgLRACbKgaKdDybSnzvBUCeh3HFc/9Cei0oiqzuZvcLWrGfMR9us9bjbO4pO+EiIqiggw3HxWhwYbyxFlyx5psBxUyOnbBcdvbiQIfIOXn8ZcQNeaLDC0LCanQNF8c//lppgtbzweiLVIhuEYSUobB77FKebqEsrrt50XNyTZfW09lVvTZUl92gSGVUBcl83yzdEVifKe59l5NkuglGd/vk0ga7m2wVPGnABjnF+xg4KeDd+IYZVAI07sMqSeDh43iSnoztTLb6JSsIem9XcREJuRfK8AYaJlXyjwqMq1q9sAKCvrDYhIzUi9qfiIX4/opXCEEW+SoP/0X1SCk+RdXPRkxD3e564UOsnayGMLIp4pOXHIUkBRwBSXNAYNaPbR3ctt7ysFkv6XOf7nL5fYnzBXBQh2DD5nne0DwtlGYRVzNFlAnaTuI6su2M6E0zVrZfxUgeyWT7Sexqj8TzvHMWlDORrXdTv+R0ddSmxcu+JZKsn0k1Vq95dREAycU4H2ocPJPjw+LOaGjDBEy+itBCtYaVuiXwtxHzzXA0kJ4phENYhDJdD8MVGPnk9yGEkw2SNdg0C0J0n2E8yui1JXDnfeoHVv3CE5GOgDRv7I9j4sbpvDGlSI940N3zv5KrjHk+a2a4T0fB+TuQAX8ezy8hrD0o1ttjfVls3omREw/ORcrf8dMu4n/ntYfvkP3QxRdFZnqnsUgOTFfYfjv1oEQuJStbXiRS0svuoPk1/RDgFAEcZSN5lXgqB5jiJPst76QvIDQD2OnOIhokzxM3ng8O4GUqQlw1Ih2zdJAq/AxW7jsfwByMKcCezpiK6MNv2SwXAURetSkaBryQkSM24ZfjgereqQ5jHpOLVn0YPKHrOBSgIUhdJU+yDpl8xxDOH3pnFUJxv0jsg8OgnimB92cYm0K6OC3zXwC9vn7mzpEJmoNufSEnA77Ja0ti3El+Fy317oK9QkkAAAAASUVORK5CYII=";

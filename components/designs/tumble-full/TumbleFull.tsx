@@ -14,16 +14,15 @@ import { motion, useReducedMotion } from "motion/react";
 import { Plus } from "lucide-react";
 import {
   useLaundryItems,
+  usePrefillCounts,
   useImageGeneration,
   useDiscordUpload,
   useSubmission,
 } from "@/hooks";
 import { getItemTint } from "@/components/designs/laundry-icons";
-import {
-  WashingMachine,
-  MACHINE_LABELS,
-  type MachineVariant,
-} from "./WashingMachine";
+// Draft 6 ("Porcelain Onyx") is the approved live machine — promoted straight
+// from the /proposed-designs gallery via the shared WasherDraftProps contract.
+import { Draft6 } from "@/components/designs/washer-drafts/Draft6";
 import type { PileStyle } from "./PileStyles";
 import { IconStrip } from "./IconStrip";
 import { LoadGauge } from "./LoadGauge";
@@ -31,10 +30,11 @@ import { Mascot } from "./Mascot";
 import { ItemRow } from "./ItemRow";
 import { ActionBar } from "./ActionBar";
 import type { DrumUnit, Selected } from "./types";
+// When a load fills to 100% the drum shakes for this long before it empties.
+// Shared so washer chrome (LCD countdowns) derives from the same number.
+import { WASH_MS } from "./washTiming";
 
 const LOAD = 15;
-// When a load fills to 100% the drum shakes for this long before it empties.
-const WASH_MS = 1900;
 // Ignore the loadsDone jump that hydration causes on mount (restored counts)
 // so the page never opens mid-wash.
 const WASH_ARM_DELAY_MS = 500;
@@ -83,8 +83,6 @@ export default function TumbleFull({ categories }: TumbleFullProps) {
   const [washedBoundary, setWashedBoundary] = useState(-1);
   const [actionError, setActionError] = useState<string | null>(null);
   const [customName, setCustomName] = useState("");
-  // Machine style preview — swap A/B/C live until the client picks one.
-  const [machine, setMachine] = useState<MachineVariant>("signature");
   // Drum fill: client picked "Tumble Toss". Swap here to try "heap" | "stack" |
   // "water" — all renderers still live in PileStyles.tsx.
   const pile: PileStyle = "toss";
@@ -111,6 +109,18 @@ export default function TumbleFull({ categories }: TumbleFullProps) {
     for (const value of Object.values(customItems)) sum += value;
     return sum;
   }, [items, customItems]);
+
+  // --- forecast prefill (?prefill= from the history page) -------------------
+  const knownItemNames = useMemo(
+    () => new Set(Object.values(categories).flat().map((item) => item.name)),
+    [categories],
+  );
+  // Ref-backed so the mount-only prefill hook reads the live (post-hydration)
+  // total rather than the first render's zeros.
+  const totalRef = useRef(total);
+  totalRef.current = total;
+  const getCurrentTotal = useCallback(() => totalRef.current, []);
+  usePrefillCounts({ knownItemNames, setCount, addCustomItem, getCurrentTotal });
 
   const loadsDone = Math.floor(total / LOAD);
   const batchesNeeded = Math.ceil(total / LOAD);
@@ -314,36 +324,11 @@ export default function TumbleFull({ categories }: TumbleFullProps) {
         </p>
       </motion.header>
 
-      {/* Machine style preview toggle — remove once a direction is approved. */}
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-          Machine style
-        </span>
-        <div className="flex gap-1 rounded-full border bg-card p-1">
-          {(Object.keys(MACHINE_LABELS) as MachineVariant[]).map((key, i) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setMachine(key)}
-              aria-pressed={machine === key}
-              className={`min-h-[36px] rounded-full px-3 text-xs font-semibold transition-colors ${
-                machine === key
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {String.fromCharCode(65 + i)} · {MACHINE_LABELS[key]}
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* Sticky primary surface: machine + gauge + the signature icon strip. */}
       <div className="sticky top-2 z-10 mb-6 rounded-2xl border bg-card/95 p-4 shadow-sm backdrop-blur">
         <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-stretch">
-          <div className="w-full max-w-[17rem] shrink-0 self-center">
-            <WashingMachine
-              variant={machine}
+          <div className="w-full max-w-[19rem] shrink-0 self-center">
+            <Draft6
               units={drumUnits}
               fill={drumFill}
               spinCount={spinCount}

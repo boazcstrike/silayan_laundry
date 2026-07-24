@@ -89,6 +89,26 @@ export async function GET(req: Request) {
       return NextResponse.json(stats);
     }
 
+    if (type === 'history') {
+      const rawLimit = parseInt(searchParams.get('limit') || '20', 10);
+      const rawOffset = parseInt(searchParams.get('offset') || '0', 10);
+      const historyLimit = Number.isFinite(rawLimit)
+        ? Math.min(100, Math.max(1, rawLimit))
+        : 20;
+      const historyOffset = Number.isFinite(rawOffset) ? Math.max(0, rawOffset) : 0;
+
+      // Fetch one extra row to learn whether another page exists.
+      const fetched = await store.getRecentSubmissions(historyLimit + 1, historyOffset);
+      const submissions = fetched.slice(0, historyLimit);
+
+      return NextResponse.json({
+        submissions,
+        limit: historyLimit,
+        offset: historyOffset,
+        hasMore: fetched.length > historyLimit,
+      });
+    }
+
     if (channel) {
       const submissions = await store.getSubmissionsByChannel(channel, limit);
       return NextResponse.json(submissions);

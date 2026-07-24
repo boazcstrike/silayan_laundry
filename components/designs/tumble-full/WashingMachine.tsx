@@ -1,23 +1,23 @@
 "use client";
 
 /**
+ * LEGACY machine — the previous live counter design, retired when Draft 6
+ * ("Porcelain Onyx") shipped. No longer rendered on the counter; kept only for
+ * the /proposed-designs "Legacy" tab (see {@link LegacyMachineGallery}).
+ *
  * Front-load washing machine chrome wrapped around the tumbling-icon porthole
  * (the {@link Drum}). Two static style directions selectable via `variant` —
- * Signature Teal / Retro Laundromat — for the client to approve before the
- * richer animation pass. Every variant is theme-aware (light + dark); the door
- * handle + hinge read the porthole as an openable washer door. The porthole
- * keeps its existing spin/fill and everything else here is static.
+ * Signature Teal / Retro Laundromat. Every variant is theme-aware (light +
+ * dark); the door handle + hinge read the porthole as an openable washer door.
+ * The porthole keeps its existing spin/fill and everything else here is static.
  */
 
-import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Drum } from "./Drum";
-import { LoadBurst, type BurstPoint } from "./LoadBurst";
+import { LoadBurst } from "./LoadBurst";
+import { useLoadBurst } from "./useLoadBurst";
 import type { PileStyle } from "./PileStyles";
 import type { DrumUnit } from "./types";
-
-// Snappy arcade burst throws a handful of glyphs — too many clutters the pop.
-const BURST_ICON_CAP = 8;
 
 export type MachineVariant = "signature" | "retro";
 
@@ -95,51 +95,9 @@ export function WashingMachine({
   const shake = isWashing && !reduce;
 
   // --- "load banked" burst: fires the instant a wash finishes (isWashing
-  // true -> false). Glyphs erupt from the porthole and a "+1 LOAD" chip flies
-  // to the LED counter, which then pops. Coordinates are measured against the
-  // machine body at fire time. Never runs under reduced motion.
-  const machineRef = useRef<HTMLDivElement>(null);
-  const ledRef = useRef<HTMLDivElement>(null);
-  const portholeRef = useRef<HTMLDivElement>(null);
-  const wasWashing = useRef(isWashing);
-  const burstUnits = useRef<DrumUnit[]>(units);
-  const burstSeq = useRef(0);
-  const [popKey, setPopKey] = useState(0);
-  const [burst, setBurst] = useState<
-    | { key: number; origin: BurstPoint; target: BurstPoint; icons: DrumUnit[] }
-    | null
-  >(null);
-
-  // Keep a snapshot of the load's glyphs while it washes — by the time the
-  // wash ends the drum has already emptied its `units`.
-  useEffect(() => {
-    if (isWashing && units.length > 0) burstUnits.current = units;
-  }, [isWashing, units]);
-
-  useEffect(() => {
-    const finishedWash = wasWashing.current && !isWashing;
-    wasWashing.current = isWashing;
-    if (!finishedWash || reduce) return;
-
-    const body = machineRef.current?.getBoundingClientRect();
-    const led = ledRef.current?.getBoundingClientRect();
-    const port = portholeRef.current?.getBoundingClientRect();
-    if (!body || !led || !port) return;
-
-    burstSeq.current += 1;
-    setBurst({
-      key: burstSeq.current,
-      origin: {
-        x: port.left + port.width / 2 - body.left,
-        y: port.top + port.height / 2 - body.top,
-      },
-      target: {
-        x: led.left + led.width / 2 - body.left,
-        y: led.top + led.height / 2 - body.top,
-      },
-      icons: burstUnits.current.slice(0, BURST_ICON_CAP),
-    });
-  }, [isWashing, reduce]);
+  // true -> false). Shared handshake — see {@link useLoadBurst}.
+  const { machineRef, ledRef, portholeRef, burst, popKey, completeBurst } =
+    useLoadBurst(units, isWashing);
 
   return (
     <div className="mx-auto w-full max-w-[17rem]">
@@ -247,10 +205,7 @@ export function WashingMachine({
               origin={burst.origin}
               target={burst.target}
               icons={burst.icons}
-              onDone={() => {
-                setPopKey((k) => k + 1);
-                setBurst(null);
-              }}
+              onDone={completeBurst}
             />
           ) : null}
         </AnimatePresence>

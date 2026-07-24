@@ -19,6 +19,7 @@ const EMPTY_SUMMARY: AnalyticsSummary = {
 function makeSqlite(): jest.Mocked<AnalyticsStore> {
   return {
     recordSubmission: jest.fn().mockResolvedValue(42),
+    findRecentDuplicate: jest.fn().mockResolvedValue(null),
     getSubmission: jest.fn().mockResolvedValue(null),
     getRecentSubmissions: jest.fn().mockResolvedValue([]),
     getSummary: jest.fn().mockResolvedValue({ ...EMPTY_SUMMARY, totalSubmissions: 1 }),
@@ -67,6 +68,60 @@ describe('DualAnalyticsStore', () => {
       const store = new DualAnalyticsStore(sqlite, null);
 
       const id = await store.recordSubmission({ Sock: 3 }, { channel: 'download' });
+
+      expect(id).toBe(42);
+      expect(sqlite.recordSubmission).toHaveBeenCalled();
+    });
+  });
+
+  describe('recordSubmission (duplicate re-send guard)', () => {
+    it('reuses the existing id and writes to neither store when a duplicate is found', async () => {
+      jest.spyOn(console, 'info').mockImplementation(() => {});
+      const sqlite = makeSqlite();
+      sqlite.findRecentDuplicate!.mockResolvedValue(7);
+      const mongo = { insertSubmission: jest.fn().mockResolvedValue(undefined) };
+      const store = new DualAnalyticsStore(sqlite, mongo as unknown as MongoAnalyticsStore);
+
+      const counts = { Shirt: 20, Shorts: 14 };
+      const options = { channel: 'discord' as const };
+      const id = await store.recordSubmission(counts, options);
+
+      expect(id).toBe(7);
+      expect(sqlite.findRecentDuplicate).toHaveBeenCalledWith(counts, options, expect.any(Number));
+      expect(sqlite.recordSubmission).not.toHaveBeenCalled();
+      expect(mongo.insertSubmission).not.toHaveBeenCalled();
+    });
+
+    it('records normally when no duplicate is found', async () => {
+      const sqlite = makeSqlite();
+      const mongo = { insertSubmission: jest.fn().mockResolvedValue(undefined) };
+      const store = new DualAnalyticsStore(sqlite, mongo as unknown as MongoAnalyticsStore);
+
+      const id = await store.recordSubmission({ Shirt: 1 }, { channel: 'discord' });
+
+      expect(id).toBe(42);
+      expect(sqlite.recordSubmission).toHaveBeenCalled();
+      expect(mongo.insertSubmission).toHaveBeenCalledWith({ Shirt: 1 }, { channel: 'discord' }, 42);
+    });
+
+    it('records normally when the duplicate check throws', async () => {
+      jest.spyOn(console, 'error').mockImplementation(() => {});
+      const sqlite = makeSqlite();
+      sqlite.findRecentDuplicate!.mockRejectedValue(new Error('db locked'));
+      const store = new DualAnalyticsStore(sqlite, null);
+
+      const id = await store.recordSubmission({ Shirt: 1 }, { channel: 'discord' });
+
+      expect(id).toBe(42);
+      expect(sqlite.recordSubmission).toHaveBeenCalled();
+    });
+
+    it('records normally when the store has no duplicate-check method', async () => {
+      const sqlite = makeSqlite();
+      delete (sqlite as { findRecentDuplicate?: unknown }).findRecentDuplicate;
+      const store = new DualAnalyticsStore(sqlite, null);
+
+      const id = await store.recordSubmission({ Shirt: 1 }, { channel: 'discord' });
 
       expect(id).toBe(42);
       expect(sqlite.recordSubmission).toHaveBeenCalled();

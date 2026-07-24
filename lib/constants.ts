@@ -158,6 +158,26 @@ export const BACKUP = {
   RETENTION_ENV: 'BACKUP_RETENTION',
 } as const;
 
+// Submission recording behavior
+export const SUBMISSION = {
+  /**
+   * Re-recording identical non-zero counts on the same channel within this many
+   * minutes is treated as a duplicate re-send (retry / accidental re-submit) and
+   * is NOT stored again — the existing submission id is reused. Prevents one
+   * physical laundry batch from inflating every total when it is sent repeatedly.
+   */
+  DEDUP_WINDOW_MINUTES: 10,
+} as const;
+
+// SQLite -> Mongo startup reconciliation settings
+export const RECONCILE = {
+  /**
+   * Env var (set to 'false'/'0'/'no') to disable the on-startup gap-fill that
+   * mirrors SQLite rows Mongo is missing (e.g. after a manual DB merge/restore).
+   */
+  ENABLED_ENV: 'RECONCILE_ON_STARTUP',
+} as const;
+
 // Default values
 export const DEFAULTS = {
   /** Default count for new items */

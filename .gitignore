@@ -48,6 +48,12 @@ public/*signature*
 !/.cursor/rules/
 !/.cursor/rules/**
 /.gemini/
+/.claude/
+/.agents/
+/.tmp/
+
+# graphify knowledge graph (regenerable via `graphify update .`)
+/graphify-out/
 
 # Warp-specific file created locally by Warp tooling (keep AGENTS.md as the canonical doc)
 /WARP.md

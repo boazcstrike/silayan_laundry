@@ -10,7 +10,8 @@
  * dashboard degrades gracefully instead of erroring.
  */
 import type { ItemCounts } from '@/lib/types/laundry';
-import type { SubmissionChannel } from '@/lib/services/AnalyticsDB';
+import type { DateRange, SubmissionChannel } from '@/lib/services/AnalyticsDB';
+import { SUBMISSION } from '@/lib/constants';
 import type { AnalyticsStore, RecordSubmissionOptions } from './AnalyticsStore';
 import type { MongoAnalyticsStore } from './MongoAnalyticsStore';
 import { redactMongoError } from './redact';
@@ -38,6 +39,26 @@ export class DualAnalyticsStore implements AnalyticsStore {
   }
 
   async recordSubmission(counts: ItemCounts, options: RecordSubmissionOptions): Promise<number> {
+    // De-dupe re-sends of the same batch: if an identical successful submission
+    // was recorded on this channel moments ago, reuse it instead of adding a row
+    // (which would double-count the batch across every total). Checked against
+    // the canonical local store; never blocks recording if the check fails.
+    if (this.sqlite.findRecentDuplicate) {
+      try {
+        const duplicateId = await this.sqlite.findRecentDuplicate(
+          counts,
+          options,
+          SUBMISSION.DEDUP_WINDOW_MINUTES,
+        );
+        if (duplicateId !== null) {
+          console.info(`[dedup] identical submission within window; reusing id ${duplicateId}`);
+          return duplicateId;
+        }
+      } catch (error) {
+        console.error('[dedup] duplicate check failed; recording normally:', error);
+      }
+    }
+
     // SQLite first: local, synchronous, generates the canonical id.
     const id = await this.sqlite.recordSubmission(counts, options);
 
@@ -59,17 +80,17 @@ export class DualAnalyticsStore implements AnalyticsStore {
     );
   }
 
-  getRecentSubmissions(limit = 10) {
+  getRecentSubmissions(limit = 10, offset = 0) {
     return this.readWithFallback(
-      (mongo) => mongo.getRecentSubmissions(limit),
-      () => this.sqlite.getRecentSubmissions(limit),
+      (mongo) => mongo.getRecentSubmissions(limit, offset),
+      () => this.sqlite.getRecentSubmissions(limit, offset),
     );
   }
 
-  getSummary() {
+  getSummary(range?: DateRange) {
     return this.readWithFallback(
-      (mongo) => mongo.getSummary(),
-      () => this.sqlite.getSummary(),
+      (mongo) => mongo.getSummary(range),
+      () => this.sqlite.getSummary(range),
     );
   }
 
@@ -94,31 +115,31 @@ export class DualAnalyticsStore implements AnalyticsStore {
     );
   }
 
-  getCategoryAverages(limit = 12) {
+  getCategoryAverages(limit = 12, range?: DateRange) {
     return this.readWithFallback(
-      (mongo) => mongo.getCategoryAverages(limit),
-      () => this.sqlite.getCategoryAverages(limit),
+      (mongo) => mongo.getCategoryAverages(limit, range),
+      () => this.sqlite.getCategoryAverages(limit, range),
     );
   }
 
-  getCategoryTimeline() {
+  getCategoryTimeline(range?: DateRange) {
     return this.readWithFallback(
-      (mongo) => mongo.getCategoryTimeline(),
-      () => this.sqlite.getCategoryTimeline(),
+      (mongo) => mongo.getCategoryTimeline(range),
+      () => this.sqlite.getCategoryTimeline(range),
     );
   }
 
-  getDailyCounts(limit = 7) {
+  getDailyCounts(limit = 7, range?: DateRange) {
     return this.readWithFallback(
-      (mongo) => mongo.getDailyCounts(limit),
-      () => this.sqlite.getDailyCounts(limit),
+      (mongo) => mongo.getDailyCounts(limit, range),
+      () => this.sqlite.getDailyCounts(limit, range),
     );
   }
 
-  getLaundryDays() {
+  getLaundryDays(range?: DateRange) {
     return this.readWithFallback(
-      (mongo) => mongo.getLaundryDays(),
-      () => this.sqlite.getLaundryDays(),
+      (mongo) => mongo.getLaundryDays(range),
+      () => this.sqlite.getLaundryDays(range),
     );
   }
 }

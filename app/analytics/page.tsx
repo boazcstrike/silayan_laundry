@@ -8,6 +8,7 @@ import { CalendarClock, ChartColumn, Shirt, Sparkles } from "lucide-react";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { AnalyticsResponse } from "@/components/analytics/types";
+import { DEFAULT_RANGE, RANGE_PRESETS, type RangeKey } from "@/lib/analyticsRange";
 import {
   containerVariants,
   itemVariants,
@@ -95,6 +96,7 @@ function describeNextLaundry(
 
 export default function AnalyticsPage() {
   const [analytics, setAnalytics] = useState<AnalyticsResponse | null>(null);
+  const [range, setRange] = useState<RangeKey>(DEFAULT_RANGE);
   const reduce = useReducedMotion();
 
   // Container/item entrance props, disabled wholesale under reduced motion.
@@ -104,11 +106,13 @@ export default function AnalyticsPage() {
   const revealItem = reduce ? {} : { variants: itemVariants };
 
   const loadData = useCallback(async () => {
-    const res = await fetch("/api/analytics", { cache: "no-store" });
+    const res = await fetch(`/api/analytics?range=${range}`, {
+      cache: "no-store",
+    });
     if (res.ok) {
       setAnalytics((await res.json()) as AnalyticsResponse);
     }
-  }, []);
+  }, [range]);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -160,6 +164,24 @@ export default function AnalyticsPage() {
             <h1>
               <Shirt size={20} className="icon-inline" /> Laundry Analytics
             </h1>
+            <div
+              className="analytics-range-filter"
+              role="group"
+              aria-label="Filter analytics by date range"
+            >
+              {RANGE_PRESETS.map((preset) => (
+                <button
+                  key={preset.key}
+                  type="button"
+                  className="analytics-range-chip"
+                  data-active={range === preset.key}
+                  aria-pressed={range === preset.key}
+                  onClick={() => setRange(preset.key)}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
           </motion.header>
 
           <motion.section

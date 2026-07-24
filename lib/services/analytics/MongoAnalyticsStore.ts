@@ -11,13 +11,14 @@
  * backends bucket a submission into the same calendar day regardless of the
  * server's UTC offset.
  */
-import type { Collection, Db } from 'mongodb';
+import type { Collection, Db, Document } from 'mongodb';
 import type { ItemCounts } from '@/lib/types/laundry';
 import type {
   AnalyticsSummary,
   CategoryAverage,
   CategoryTimelineRow,
   DailyCount,
+  DateRange,
   FullSubmission,
   SubmissionChannel,
   SubmissionRecord,
@@ -63,6 +64,17 @@ function formatLocalDateTime(date: Date): string {
     `${localDay(date)} ` +
     `${pad2(date.getHours())}:${pad2(date.getMinutes())}:${pad2(date.getSeconds())}`
   );
+}
+
+/**
+ * Leading `$match` stages scoping a pipeline to a local-day {@link DateRange}.
+ * Filters on the denormalized `day` string (lexicographic compare is correct
+ * for `YYYY-MM-DD`), keeping timezone parity with SQLite's `date(timestamp)`.
+ * Returns `[]` when no range is given so unfiltered pipelines are unchanged.
+ */
+function dayMatchStage(range: DateRange | undefined): Document[] {
+  if (!range) return [];
+  return [{ $match: { day: { $gte: range.start, $lte: range.end } } }];
 }
 
 /** Non-zero item counts as embedded docs. */
@@ -152,6 +164,17 @@ export class MongoAnalyticsStore implements AnalyticsStore {
   }
 
   /**
+   * Set of `sqliteId`s already present in Mongo (null ids excluded). Used by the
+   * startup reconcile to fill only the gap — the SQLite rows Mongo is missing —
+   * instead of rewriting every document each boot.
+   */
+  async getKnownSqliteIds(): Promise<Set<number>> {
+    const coll = await this.collection();
+    const ids = await coll.distinct('sqliteId', { sqliteId: { $ne: null } });
+    return new Set(ids as number[]);
+  }
+
+  /**
    * Interface compliance: standalone insert with no SQLite id. Not used by the
    * dual-write path (which calls {@link insertSubmission}). Returns 0.
    */
@@ -166,17 +189,24 @@ export class MongoAnalyticsStore implements AnalyticsStore {
     return doc ? toFullSubmission(doc) : null;
   }
 
-  async getRecentSubmissions(limit = 10): Promise<FullSubmission[]> {
+  async getRecentSubmissions(limit = 10, offset = 0): Promise<FullSubmission[]> {
     const coll = await this.collection();
-    const docs = await coll.find().sort({ timestamp: -1 }).limit(limit).toArray();
+    const docs = await coll
+      .find()
+      .sort({ timestamp: -1 })
+      .skip(offset)
+      .limit(limit)
+      .toArray();
     return docs.map(toFullSubmission);
   }
 
-  async getSummary(): Promise<AnalyticsSummary> {
+  async getSummary(range?: DateRange): Promise<AnalyticsSummary> {
     const coll = await this.collection();
+    const match = dayMatchStage(range);
 
     const [totals] = await coll
       .aggregate<{ total: number; successful: number; failed: number; avgItems: number }>([
+        ...match,
         {
           $group: {
             _id: null,
@@ -191,6 +221,7 @@ export class MongoAnalyticsStore implements AnalyticsStore {
 
     const frequentItems = await coll
       .aggregate<{ name: string; totalCount: number; frequency: number }>([
+        ...match,
         { $unwind: '$items' },
         {
           $group: {
@@ -256,10 +287,11 @@ export class MongoAnalyticsStore implements AnalyticsStore {
       .toArray();
   }
 
-  async getCategoryAverages(limit = 12): Promise<CategoryAverage[]> {
+  async getCategoryAverages(limit = 12, range?: DateRange): Promise<CategoryAverage[]> {
     const coll = await this.collection();
     return coll
       .aggregate<CategoryAverage>([
+        ...dayMatchStage(range),
         { $unwind: '$items' },
         {
           $group: {
@@ -284,10 +316,11 @@ export class MongoAnalyticsStore implements AnalyticsStore {
       .toArray();
   }
 
-  async getCategoryTimeline(): Promise<CategoryTimelineRow[]> {
+  async getCategoryTimeline(range?: DateRange): Promise<CategoryTimelineRow[]> {
     const coll = await this.collection();
     return coll
       .aggregate<CategoryTimelineRow>([
+        ...dayMatchStage(range),
         { $unwind: '$items' },
         {
           $group: {
@@ -301,10 +334,11 @@ export class MongoAnalyticsStore implements AnalyticsStore {
       .toArray();
   }
 
-  async getDailyCounts(limit = 7): Promise<DailyCount[]> {
+  async getDailyCounts(limit = 7, range?: DateRange): Promise<DailyCount[]> {
     const coll = await this.collection();
     const rows = await coll
       .aggregate<DailyCount>([
+        ...dayMatchStage(range),
         { $group: { _id: '$day', count: { $sum: 1 } } },
         { $sort: { _id: -1 } },
         { $limit: limit },
@@ -314,10 +348,11 @@ export class MongoAnalyticsStore implements AnalyticsStore {
     return rows.reverse();
   }
 
-  async getLaundryDays(): Promise<string[]> {
+  async getLaundryDays(range?: DateRange): Promise<string[]> {
     const coll = await this.collection();
     const rows = await coll
       .aggregate<{ day: string }>([
+        ...dayMatchStage(range),
         { $group: { _id: '$day' } },
         { $sort: { _id: 1 } },
         { $project: { _id: 0, day: '$_id' } },

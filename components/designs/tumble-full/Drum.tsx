@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { LaundryIcon } from "@/components/designs/laundry-icons";
 import { DrumPile, type PileStyle } from "./PileStyles";
@@ -41,21 +42,25 @@ const SUDS: ReadonlyArray<{ left: number; size: number; delay: number }> = [
   { left: 40, size: 6, delay: 0.35 },
   { left: 55, size: 11, delay: 0.15 },
   { left: 70, size: 7, delay: 0.5 },
-  { left: 34, size: 5, delay: 0.7 },
   { left: 64, size: 8, delay: 0.9 },
 ];
 
-function Suds() {
+function Suds({ count = SUDS.length }: { count?: number }) {
+  const reduce = useReducedMotion();
+  if (reduce) return null;
   return (
     <div className="pointer-events-none absolute inset-0" aria-hidden="true">
-      {SUDS.map((b, i) => (
+      {SUDS.slice(0, count).map((b, i) => (
         <motion.span
           key={i}
           className="absolute rounded-full bg-white/70 shadow-sm"
           style={{ left: `${b.left}%`, bottom: "12%", width: b.size, height: b.size }}
           initial={{ y: 0, opacity: 0, scale: 0.6 }}
           animate={{ y: [-4, -78], opacity: [0, 0.9, 0], scale: [0.6, 1, 0.8] }}
-          transition={{ duration: 1.6, delay: b.delay, repeat: Infinity, ease: "easeOut" }}
+          // repeat: 1 (not Infinity) — duration 1.6s + stagger delays inside a
+          // 1.9s wash means a restart is never visible, and it keeps 6 loops
+          // out of the page's concurrent-animation census.
+          transition={{ duration: 1.6, delay: b.delay, repeat: 1, ease: "easeOut" }}
         />
       ))}
     </div>
@@ -70,7 +75,15 @@ function Suds() {
  * - "water": the original solid fill that rises on the Y axis while the load's
  *   glyphs tumble on a rotating layer — kept as a comparison option.
  */
-export function Drum({ units, fill, spinCount, total, loadsDone, pileStyle, isWashing }: DrumProps) {
+export const Drum = memo(function Drum({
+  units,
+  fill,
+  spinCount,
+  total,
+  loadsDone,
+  pileStyle,
+  isWashing,
+}: DrumProps) {
   const reduce = useReducedMotion();
   const isWater = pileStyle === "water";
   const shake = isWashing && !reduce;
@@ -117,7 +130,7 @@ export function Drum({ units, fill, spinCount, total, loadsDone, pileStyle, isWa
                     initial={reduce ? false : { scale: 0, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={reduce ? { opacity: 0 } : { scale: 0, opacity: 0 }}
-                    transition={{ type: "spring", stiffness: 520, damping: 24 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 17 }}
                   >
                     <LaundryIcon name={unit.name} className="size-5" />
                   </motion.span>
@@ -141,7 +154,7 @@ export function Drum({ units, fill, spinCount, total, loadsDone, pileStyle, isWa
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <Suds />
+            {!reduce && <Suds />}
             <motion.div
               className="absolute inset-0 rounded-full"
               style={{ boxShadow: "inset 0 0 0 3px color-mix(in oklch, var(--chart-2) 60%, transparent)" }}
@@ -154,7 +167,7 @@ export function Drum({ units, fill, spinCount, total, loadsDone, pileStyle, isWa
 
       {/* Readout — pinned to the upper drum so a rising pile never hides it. */}
       <div className="pointer-events-none absolute inset-x-0 top-[14%] grid place-items-center">
-        <div className="rounded-2xl bg-white/85 px-3 py-1 text-center shadow-sm backdrop-blur-sm">
+        <div className="rounded-2xl bg-white/95 px-3 py-1 text-center shadow-sm">
           <div
             className="text-2xl font-black tabular-nums leading-none text-[#0f1c1a]"
             aria-live="polite"
@@ -168,4 +181,4 @@ export function Drum({ units, fill, spinCount, total, loadsDone, pileStyle, isWa
       </div>
     </div>
   );
-}
+});

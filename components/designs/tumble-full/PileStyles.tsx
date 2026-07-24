@@ -60,7 +60,7 @@ const MOUND_SLOTS: readonly Slot[] = (() => {
   return slots;
 })();
 
-const springDrop = { type: "spring", stiffness: 520, damping: 22 } as const;
+const springDrop = { type: "spring", stiffness: 300, damping: 17 } as const;
 
 // --- A · Tumble Toss -----------------------------------------------------------
 
@@ -157,8 +157,15 @@ function StackPile({ units, reduce }: { units: DrumUnit[]; reduce: boolean }) {
 function BaseShadow({ fill }: { fill: number }) {
   return (
     <div
-      className="pointer-events-none absolute inset-x-0 bottom-[6%] mx-auto h-3 rounded-[50%] bg-black/15 blur-[3px]"
-      style={{ width: `${28 + fill * 46}%` }}
+      className="pointer-events-none absolute inset-x-0 bottom-[6%] mx-auto h-3 rounded-[50%]"
+      style={{
+        width: `${28 + fill * 46}%`,
+        // Soft contact-shadow ellipse painted as a gradient instead of
+        // `bg-black/15 blur-[3px]` — same look, no CSS filter living inside
+        // the drum's shaking subtree.
+        background:
+          "radial-gradient(ellipse at center, rgba(0,0,0,0.15), rgba(0,0,0,0.10) 55%, transparent 75%)",
+      }}
       aria-hidden="true"
     />
   );

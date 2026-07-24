@@ -17,12 +17,21 @@ global.TextDecoder = class TextDecoder {
   }
 };
 
-global.HTMLCanvasElement.prototype.getContext = jest.fn(() => ({
-  fillStyle: '',
-  font: '',
-  drawImage: jest.fn(),
-  fillText: jest.fn(),
-}));
+// jest-environment-jsdom does not forward Node's TextEncoder global
+// (needed by lib/prefill.ts base64url encoding).
+if (typeof global.TextEncoder === 'undefined') {
+  global.TextEncoder = require('util').TextEncoder;
+}
+
+// DOM-only mock: skipped under the `node` test environment (API route tests).
+if (typeof HTMLCanvasElement !== 'undefined') {
+  global.HTMLCanvasElement.prototype.getContext = jest.fn(() => ({
+    fillStyle: '',
+    font: '',
+    drawImage: jest.fn(),
+    fillText: jest.fn(),
+  }));
+}
 
 global.Image = class {
   constructor() {
@@ -98,7 +107,8 @@ global.FileReader = class {
 // Mock fetch for API testing
 global.fetch = jest.fn();
 
-// Mock document.createElement for testing
+// Mock document.createElement for testing (DOM-only; skipped under `node` env)
+if (typeof document !== 'undefined') {
 const originalCreateElement = global.document.createElement;
 global.document.createElement = function(tagName) {
   // For canvas elements, create a real element and add mock methods
@@ -130,6 +140,7 @@ global.document.createElement = function(tagName) {
   // For all other tags, use the original function
   return originalCreateElement.call(document, tagName);
 };
+}
 
 // Mock console methods to keep test output clean
 global.console = {

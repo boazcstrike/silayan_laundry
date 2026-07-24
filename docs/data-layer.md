@@ -41,6 +41,14 @@ Dashboard
 `/api/discord`, then calls `recordSubmission(counts, 'discord', success)`. `download` behaves the
 same. So both channels dual-write automatically — no channel-specific persistence code.
 
+**Re-send de-duplication.** `DualAnalyticsStore.recordSubmission` first asks the canonical SQLite
+store (`AnalyticsDB.findRecentDuplicate`) whether an identical **successful** submission was recorded
+on the same channel within `SUBMISSION.DEDUP_WINDOW_MINUTES` (default 10). If so it reuses that id and
+writes to **neither** store — one physical laundry batch sent repeatedly (Discord retries, accidental
+re-submits) must not inflate every total. Only successful priors count, so a failed attempt followed
+by a successful retry still records. The check never blocks recording: any error falls through to a
+normal write.
+
 ## Files (`lib/services/analytics/`)
 
 | File | Responsibility |
@@ -116,7 +124,7 @@ keys with empty values.
 |---|---|
 | `scripts/test-mongo-connection.ts` | Ping + read/write probe. Optional `MONGODB_DNS_SERVERS=1.1.1.1,8.8.8.8` to bypass a local resolver that refuses SRV. |
 | `scripts/verify-dual-write.ts` | Live end-to-end: dual-writes to a temp SQLite + real Mongo, reads back via pipelines, asserts, cleans up its tagged docs. |
-| `scripts/backfill-mongo.ts` | One-time (idempotent) copy of existing SQLite rows into Mongo. Upserts on `sqliteId` — safe to re-run; also reconciles rows a live Mongo write missed. |
+| `scripts/backfill-mongo.ts` | One-time (idempotent) copy of **all** existing SQLite rows into Mongo. Upserts every row on `sqliteId` — safe to re-run; a full repair pass (rewrites drifted docs). The lighter gap-fill (missing rows only) runs automatically on boot — see `lib/services/analytics/reconcile.ts`. |
 
 Run with `pnpm dlx tsx scripts/<name>.ts` (needs `.env`).
 
@@ -128,6 +136,48 @@ Run with `pnpm dlx tsx scripts/<name>.ts` (needs `.env`).
 3. Add the fallback wrapper in `DualAnalyticsStore` (`readWithFallback(mongoRead, sqliteRead)`).
 4. Consume via `getAnalyticsStore()` in the route. Keep the JSON shape stable.
 
+## Date-range quick filter
+
+The dashboard's quick filters (All time / Past month / Past 2 months / Past 6 months / This
+year) scope **every** read — summary counts, category charts, daily bars, and the forecast.
+
+- `GET /api/analytics?range=all|1m|2m|6m|year`. The route resolves the key to an inclusive
+  local-day `DateRange` (`lib/analyticsRange.ts`, `resolveRange`) and threads it through
+  `getSummary`, `getCategoryAverages`, `getCategoryTimeline`, `getDailyCounts`, and
+  `getLaundryDays`. Unknown/absent key → `all` (no filter).
+- **Parity invariant holds:** filtering is on the **local grouping day** — `date(timestamp)` in
+  SQLite, the denormalized `day` string in Mongo (lexicographic compare is correct for
+  `YYYY-MM-DD`). Never filter on the raw Mongo `timestamp`. When no range is passed the queries
+  are byte-for-byte the originals, so the all-time path is unchanged.
+- `range` is optional on all five store reads; other reads (`getSubmissionsByDateRange`,
+  channel reads) are untouched.
+
+## History pagination
+
+The `/history` page lists recent submissions with load-more pagination via `GET /api/submissions?type=history&limit=20&offset=0`.
+
+- `getRecentSubmissions(limit, offset)` is implemented in all three stores (SQLite, MongoDB, Dual).
+- **Limit** is clamped to 1–100 on the route; client controls pagination step (default 20).
+- **Offset** is zero-indexed; `?offset=0&limit=20` returns submissions 0–19 (or fewer if fewer exist).
+- Responses include `{ submissions, limit, offset, hasMore }` so the UI can render "load more" only when needed.
+- **Ordering:** SQLite uses `ORDER BY id DESC` (by submit time); Mongo uses `sort({ timestamp: -1 })` (latest first).
+  Both produce identical orderings for the user, reflecting most-recent-first submission history.
+- Both backends apply the offset **after** ordering, ensuring a consistent page-turn experience.
+
+For implementation details, see `AnalyticsStore.getRecentSubmissions()` and its backends in `SqliteAnalyticsStore` and `MongoAnalyticsStore`.
+
+## Prefill parameter (smart supply suggestion)
+
+The `/history` page renders a `ForecastPrefillCard` that suggests counts based on the dashboard forecast. The suggestion is encoded in a URL parameter via `lib/prefill.ts`:
+
+- `?prefill=<base64url>` encodes item counts as compact base64url JSON, dropped for values ≤ 0, rounded to integers.
+- `hooks/usePrefillCounts.ts` (mount-only, `setTimeout(0)`) decodes the param and applies suggested counts to the main counter via `useLaundryItems.setCount()`.
+- If decoded counts have a non-zero total, the hook prompts via `window.confirm`; decline aborts apply but still strips the URL param.
+- The param is stripped via `history.replaceState()` after apply (or abort), leaving the counter without URL clutter.
+- Known items are applied directly; custom items are created first (via `addCustomItem()`), then populated.
+
+This flow allows the forecast card to bootstrap the counter with intelligent defaults without URL bloat or confirmation friction after the first impression.
+
 ## Gotchas
 
 - **Timezone parity** — the top parity risk. Always bucket on the denormalized local `day`. Test
@@ -136,8 +186,13 @@ Run with `pnpm dlx tsx scripts/<name>.ts` (needs `.env`).
   Vercel/serverless `/data` is ephemeral per-instance, so the SQLite copy and fallback won't
   persist across invocations (Mongo becomes the real store). Fine on Docker/self-host (current
   setup). Re-check before any serverless deploy.
-- **Missed Mongo writes** — if Mongo is down at write time, SQLite keeps the record and Mongo misses
-  it. Re-running `backfill-mongo.ts` upserts the gap closed (reconciliation). No automatic job yet.
+- **Missed Mongo writes / out-of-band SQLite rows** — if Mongo is down at write time, or rows enter
+  SQLite by another path (a manual DB merge from another machine, a restore point), Mongo misses them.
+  The dashboard reads Mongo, so those rows stay invisible until mirrored. **This is now auto-healed on
+  every server boot:** `instrumentation.ts` runs `runStartupReconcile()` (`lib/services/analytics/
+  reconcile.ts`), which upserts only the SQLite rows whose `sqliteId` Mongo lacks (non-destructive;
+  Mongo-only rows untouched). Disable with `RECONCILE_ON_STARTUP=false`. For a full repair that
+  rewrites every doc (not just the gap), run `scripts/backfill-mongo.ts` manually.
 - **Reads are async now** — routes must `await` store calls; SQLite is sync under the adapter but
   the interface is async to accommodate Mongo.
 ```
