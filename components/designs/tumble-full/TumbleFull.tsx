@@ -324,10 +324,12 @@ export default function TumbleFull({ categories }: TumbleFullProps) {
         </p>
       </motion.header>
 
-      {/* Sticky primary surface: machine + gauge + the signature icon strip. */}
-      <div className="sticky top-2 z-10 mb-6 rounded-2xl border bg-card/95 p-4 shadow-sm backdrop-blur">
-        <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-stretch">
-          <div className="w-full max-w-[19rem] shrink-0 self-center">
+      {/* Sticky primary surface: machine + gauge + the signature icon strip.
+          Capped at ~50dvh and split into two even columns so the machine
+          never crowds the category list off the bottom of the viewport. */}
+      <div className="sticky top-2 z-10 mb-6 max-h-[50dvh] overflow-y-auto rounded-2xl border bg-card/95 p-4 shadow-sm backdrop-blur">
+        <div className="flex flex-row items-stretch gap-3">
+          <div className="w-1/2 shrink-0 self-center">
             <Draft6
               units={drumUnits}
               fill={drumFill}
@@ -338,10 +340,10 @@ export default function TumbleFull({ categories }: TumbleFullProps) {
               isWashing={isWashing}
             />
           </div>
-          <div className="flex w-full flex-col gap-3">
+          <div className="flex w-1/2 flex-col justify-center gap-2">
             <Mascot total={total} fill={drumFill} />
             {/* Selected items ride in the empty middle, between mascot + gauge. */}
-            <div className="min-h-0 flex-1 overflow-y-auto sm:max-h-[10rem]">
+            <div className="min-h-0 flex-1 overflow-y-auto max-h-[7rem]">
               <IconStrip selected={selected} onInc={handleInc} onDec={handleDec} />
             </div>
             <LoadGauge fill={drumFill} loadsDone={loadsDone} batchesNeeded={batchesNeeded} />
